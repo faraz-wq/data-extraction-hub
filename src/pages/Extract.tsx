@@ -1,0 +1,145 @@
+import { useState, useEffect } from 'react';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { UploadForm } from '@/components/extract/UploadForm';
+import { ResultsView } from '@/components/extract/ResultsView';
+import { PDFViewerWithBoxes } from '@/components/extract/PDFViewerWithBoxes';
+import { api, Schema, SessionDetail } from '@/lib/api';
+import { toast } from '@/hooks/use-toast';
+import { FileSearch, Sparkles } from 'lucide-react';
+
+// Mock schemas for development
+const mockSchemas: Schema[] = [
+  { schema_id: 'sch_invoice', schema_name: 'Invoice', description: 'Extract invoice data including vendor, amounts, and line items', fields: [{ name: 'vendor_name', type: 'string', description: 'Vendor name', required: true }, { name: 'total_amount', type: 'number', description: 'Total amount', required: true }, { name: 'date', type: 'date', description: 'Invoice date', required: true }] },
+  { schema_id: 'sch_receipt', schema_name: 'Receipt', description: 'Extract receipt data from retail purchases', fields: [{ name: 'store_name', type: 'string', description: 'Store name', required: true }, { name: 'total', type: 'number', description: 'Total', required: true }] },
+  { schema_id: 'sch_contract', schema_name: 'Contract', description: 'Extract key terms from legal contracts', fields: [{ name: 'parties', type: 'array', description: 'Contract parties', required: true }, { name: 'effective_date', type: 'date', description: 'Start date', required: true }, { name: 'value', type: 'number', description: 'Contract value', required: false }] },
+  { schema_id: 'sch_id', schema_name: 'ID Document', description: 'Extract data from identity documents', fields: [{ name: 'full_name', type: 'string', description: 'Full name', required: true }, { name: 'id_number', type: 'string', description: 'ID number', required: true }, { name: 'expiry_date', type: 'date', description: 'Expiry date', required: true }] },
+];
+
+export default function Extract() {
+  const [schemas, setSchemas] = useState<Schema[]>([]);
+  const [isLoadingSchemas, setIsLoadingSchemas] = useState(true);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [extractionResult, setExtractionResult] = useState<SessionDetail | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [highlightedField, setHighlightedField] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchSchemas = async () => {
+      try {
+        const data = await api.getSchemas();
+        setSchemas(data);
+      } catch {
+        // Use mock data if API fails
+        setSchemas(mockSchemas);
+      } finally {
+        setIsLoadingSchemas(false);
+      }
+    };
+
+    fetchSchemas();
+  }, []);
+
+  const handleExtract = async (schemaId: string, files: File[]) => {
+    setIsExtracting(true);
+    setExtractionResult(null);
+    setUploadedFile(files[0] || null);
+
+    try {
+      const result = await api.extract(schemaId, files);
+      setExtractionResult(result);
+      toast({
+        title: 'Extraction Complete',
+        description: `Successfully extracted ${Object.keys(result.summary || {}).length} fields`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Extraction Failed',
+        description: error instanceof Error ? error.message : 'An error occurred during extraction',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsExtracting(false);
+    }
+  };
+
+  const handleFieldHover = (field: string | null) => {
+    setHighlightedField(field);
+  };
+
+  const handleFieldClick = (field: string) => {
+    setHighlightedField(field);
+  };
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Extract</h1>
+          <p className="text-muted-foreground mt-1">
+            Upload documents and extract structured data using your schemas
+          </p>
+        </div>
+
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Upload Form */}
+          <div className="lg:col-span-1">
+            <UploadForm
+              schemas={schemas}
+              isLoadingSchemas={isLoadingSchemas}
+              onExtract={handleExtract}
+              isExtracting={isExtracting}
+            />
+          </div>
+
+          {/* Right Column - Results & Preview */}
+          <div className="lg:col-span-2 space-y-6">
+            {extractionResult ? (
+              <>
+                <ResultsView
+                  result={extractionResult}
+                  onFieldHover={handleFieldHover}
+                  highlightedField={highlightedField}
+                />
+                <PDFViewerWithBoxes
+                  file={uploadedFile}
+                  boundingBoxes={extractionResult.bounding_boxes}
+                  highlightedField={highlightedField}
+                  onFieldClick={handleFieldClick}
+                />
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-[500px] rounded-xl border border-dashed border-border bg-card/50">
+                {isExtracting ? (
+                  <div className="text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 relative">
+                      <Sparkles className="w-16 h-16 text-primary animate-pulse" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                      Processing Documents
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Extracting data using AI...
+                    </p>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <FileSearch className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                      No Extraction Results
+                    </h3>
+                    <p className="text-sm text-muted-foreground max-w-md">
+                      Upload documents and select a schema to extract structured data.
+                      Results will appear here.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+}

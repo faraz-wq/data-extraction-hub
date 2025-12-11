@@ -12,6 +12,7 @@ import Sessions from "./pages/Sessions";
 import Schemas from "./pages/Schemas";
 import ApiKeys from "./pages/ApiKeys";
 import Settings from "./pages/Settings";
+import Extract from "./pages/Extract";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -85,7 +86,7 @@ function AppRoutes() {
         path="/extract"
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <Extract />
           </ProtectedRoute>
         }
       />
