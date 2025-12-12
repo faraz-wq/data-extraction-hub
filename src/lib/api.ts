@@ -1,6 +1,6 @@
 // API client for document extraction platform
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://unflavored-chasity-noncontagiously.ngrok-free.dev';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 interface AuthTokens {
   access_token: string;
@@ -40,26 +40,17 @@ interface Session {
 
 interface SessionDetail extends Session {
   summary: Record<string, unknown>;
-  bounding_boxes: BoundingBox[];
-  citations: Citation[];
+  bounding_boxes: Record<string, BoundingBox>;
+  citations: Record<string, string>;
   documents: Document[];
 }
 
 interface BoundingBox {
-  field: string;
+  filename: string;
   page: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  coordinates: number[];
 }
 
-interface Citation {
-  field: string;
-  text: string;
-  page: number;
-  confidence: number;
-}
 
 interface Document {
   id: string;
@@ -72,13 +63,16 @@ interface Schema {
   schema_name: string;
   description: string;
   fields: SchemaField[];
+  created_by?: string | number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface SchemaField {
   name: string;
   type: string;
   description: string;
-  required: boolean;
+  required?: boolean;
 }
 
 interface ApiKey {
@@ -88,23 +82,39 @@ interface ApiKey {
   last_used_at: string | null;
   revoked: boolean;
   total_requests: number;
+  total_errors?: number;
+  total_documents?: number;
 }
 
 interface LogEntry {
+  id?: number;
+  api_key_id?: number;
+  session_id?: string;
   method: string;
   path: string;
   status_code: number;
   processing_ms: number;
   timestamp: string;
   client_ip: string;
+  user_agent?: string;
   error_message: string | null;
 }
 
 interface MetricPoint {
-  timestamp: string;
+  bucket: string;
   requests: number;
   errors: number;
   avg_ms: number;
+}
+
+interface PaginatedResponse<T> {
+  items: T[];
+  total_count?: number;
+}
+
+interface SchemaListResponse {
+  items?: Schema[];
+  schemas?: Schema[];
 }
 
 class ApiClient {
@@ -134,22 +144,33 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${this.accessToken}`;
     }
 
+    // Remove Content-Type for FormData (let browser set it with boundary)
+    if (options.body instanceof FormData) {
+      delete headers['Content-Type'];
+    }
+
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers,
     });
 
-    if (response.status === 401 && this.refreshToken) {
-      await this.refresh();
-      headers['Authorization'] = `Bearer ${this.accessToken}`;
-      const retryResponse = await fetch(`${API_BASE_URL}${endpoint}`, {
-        ...options,
-        headers,
-      });
-      if (!retryResponse.ok) {
-        throw new Error(`API Error: ${retryResponse.status}`);
+    if (response.status === 401 && this.refreshToken && !endpoint.includes('/auth/refresh')) {
+      try {
+        await this.refresh();
+        headers['Authorization'] = `Bearer ${this.accessToken}`;
+        const retryResponse = await fetch(`${API_BASE_URL}${endpoint}`, {
+          ...options,
+          headers,
+        });
+        if (!retryResponse.ok) {
+          const error = await retryResponse.json().catch(() => ({}));
+          throw new Error(error.detail || `API Error: ${retryResponse.status}`);
+        }
+        return retryResponse.json();
+      } catch (e) {
+        this.clearAuth();
+        throw e;
       }
-      return retryResponse.json();
     }
 
     if (!response.ok) {
@@ -232,7 +253,8 @@ class ApiClient {
 
   // Sessions
   async getSessions(limit = 20, offset = 0): Promise<Session[]> {
-    return this.request<Session[]>(`/v1/me/sessions/?limit=${limit}&offset=${offset}`);
+    const response = await this.request<PaginatedResponse<Session>>(`/v1/me/sessions/?limit=${limit}&offset=${offset}`);
+    return response.items;
   }
 
   async getSession(sessionId: string): Promise<SessionDetail> {
@@ -241,10 +263,11 @@ class ApiClient {
 
   // Schemas
   async getSchemas(): Promise<Schema[]> {
-    return this.request<Schema[]>('/v1/me/schemas');
+    const response = await this.request<SchemaListResponse>('/v1/me/schemas');
+    return response.items || response.schemas || [];
   }
 
-  async createSchema(schema: Omit<Schema, 'schema_id'>): Promise<Schema> {
+  async createSchema(schema: Omit<Schema, 'schema_id' | 'created_by' | 'created_at' | 'updated_at'> & { schema_id: string }): Promise<Schema> {
     return this.request<Schema>('/v1/me/schemas', {
       method: 'POST',
       body: JSON.stringify(schema),
@@ -264,7 +287,8 @@ class ApiClient {
 
   // API Keys
   async getApiKeys(): Promise<ApiKey[]> {
-    return this.request<ApiKey[]>('/v1/me/api-keys/');
+    const response = await this.request<PaginatedResponse<ApiKey>>('/v1/me/api-keys/');
+    return response.items;
   }
 
   async createApiKey(description: string): Promise<{ api_key: string }> {
@@ -292,18 +316,45 @@ class ApiClient {
     if (params.errors_only) query.set('errors_only', 'true');
     if (params.min_processing_ms) query.set('min_processing_ms', params.min_processing_ms.toString());
     if (params.path_contains) query.set('path_contains', params.path_contains);
-    return this.request<LogEntry[]>(`/v1/me/logs?${query.toString()}`);
+
+    const response = await this.request<PaginatedResponse<LogEntry>>(`/v1/me/logs?${query.toString()}`);
+    return response.items;
   }
 
   // Extract
   async extract(schemaId: string, files: File[]): Promise<SessionDetail> {
     const formData = new FormData();
     formData.append('schema_id', schemaId);
-    files.forEach((file) => formData.append('files[]', file));
+    files.forEach((file) => formData.append('files', file));
+
+    // Note: extract-custom requires API Key, not JWT
+    if (!this.apiKey) {
+      throw new Error('API Key is required for extraction');
+    }
 
     const response = await fetch(`${API_BASE_URL}/v1/extract-custom`, {
       method: 'POST',
-      headers: this.apiKey ? { 'X-API-Key': this.apiKey } : {},
+      headers: {
+        'X-API-Key': this.apiKey,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.detail || `Extraction failed: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async extractSummary(applicationType: string, files: File[]): Promise<SessionDetail> {
+    const formData = new FormData();
+    formData.append('application_type', applicationType);
+    files.forEach((file) => formData.append('files', file));
+
+    const response = await fetch(`${API_BASE_URL}/extract-summary`, {
+      method: 'POST',
       body: formData,
     });
 
@@ -317,4 +368,4 @@ class ApiClient {
 }
 
 export const api = new ApiClient();
-export type { Stats, Session, SessionDetail, Schema, SchemaField, ApiKey, LogEntry, MetricPoint, User, BoundingBox, Citation };
+export type { Stats, Session, SessionDetail, Schema, SchemaField, ApiKey, LogEntry, MetricPoint, User, BoundingBox };

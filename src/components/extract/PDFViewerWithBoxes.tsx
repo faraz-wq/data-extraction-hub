@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,14 +13,14 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 
 interface PDFViewerWithBoxesProps {
   file: File | string | null;
-  boundingBoxes?: BoundingBox[];
+  boundingBoxes?: Record<string, BoundingBox>;
   highlightedField?: string | null;
   onFieldClick?: (field: string) => void;
 }
 
 export function PDFViewerWithBoxes({
   file,
-  boundingBoxes = [],
+  boundingBoxes = {},
   highlightedField,
   onFieldClick,
 }: PDFViewerWithBoxesProps) {
@@ -47,18 +47,31 @@ export function PDFViewerWithBoxes({
   const zoomOut = () => setScale(prev => Math.max(0.5, prev - 0.25));
   const resetZoom = () => setScale(1.0);
 
+  // Transform bounding boxes for rendering
+  const boxes = useMemo(() => Object.entries(boundingBoxes).map(([field, box]) => {
+    const [x1, y1, x2, y2] = box.coordinates;
+    return {
+      field,
+      page: box.page,
+      x: x1,
+      y: y1,
+      width: x2 - x1,
+      height: y2 - y1,
+    };
+  }), [boundingBoxes]);
+
   // Filter bounding boxes for current page
-  const currentPageBoxes = boundingBoxes.filter(box => box.page === pageNumber);
+  const currentPageBoxes = boxes.filter(box => box.page === pageNumber);
 
   // Navigate to page when highlighted field changes
   useEffect(() => {
     if (highlightedField) {
-      const box = boundingBoxes.find(b => b.field === highlightedField);
+      const box = boxes.find(b => b.field === highlightedField);
       if (box && box.page !== pageNumber) {
         setPageNumber(box.page);
       }
     }
-  }, [highlightedField, boundingBoxes, pageNumber]);
+  }, [highlightedField, boxes, pageNumber]);
 
   if (!file) {
     return (

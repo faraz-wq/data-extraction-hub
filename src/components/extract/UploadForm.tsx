@@ -1,28 +1,36 @@
 import { useState, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Upload, X, FileText, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Schema } from '@/lib/api';
 
+const APPLICATION_TYPES = [
+  "Income Certificate",
+  "OBC Certificate",
+  "EWS Certificate",
+  "Integrated Certificate",
+  "Family Member Certificate"
+];
+
 interface UploadFormProps {
   schemas: Schema[];
   isLoadingSchemas: boolean;
-  onExtract: (schemaId: string, files: File[]) => Promise<void>;
+  onExtract: (id: string, type: 'schema' | 'application', files: File[]) => Promise<void>;
   isExtracting: boolean;
 }
 
 export function UploadForm({ schemas, isLoadingSchemas, onExtract, isExtracting }: UploadFormProps) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [selectedSchema, setSelectedSchema] = useState<string>('');
+  const [selectedValue, setSelectedValue] = useState<string>('');
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     const files = Array.from(e.dataTransfer.files).filter(
       file => file.type === 'application/pdf' || file.type.startsWith('image/')
     );
@@ -51,8 +59,13 @@ export function UploadForm({ schemas, isLoadingSchemas, onExtract, isExtracting 
   };
 
   const handleSubmit = async () => {
-    if (!selectedSchema || selectedFiles.length === 0) return;
-    await onExtract(selectedSchema, selectedFiles);
+    if (!selectedValue || selectedFiles.length === 0) return;
+
+    const isSchema = selectedValue.startsWith('schema:');
+    const id = isSchema ? selectedValue.replace('schema:', '') : selectedValue;
+    const type = isSchema ? 'schema' : 'application';
+
+    await onExtract(id, type, selectedFiles);
   };
 
   const formatFileSize = (bytes: number) => {
@@ -61,30 +74,43 @@ export function UploadForm({ schemas, isLoadingSchemas, onExtract, isExtracting 
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  const selectedSchema = schemas.find(s => `schema:${s.schema_id}` === selectedValue);
+
   return (
     <Card variant="glass" className="h-fit">
       <CardHeader>
         <CardTitle className="text-lg">Upload Documents</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Schema Selector */}
+        {/* Type Selector */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Select Schema</label>
-          <Select value={selectedSchema} onValueChange={setSelectedSchema} disabled={isLoadingSchemas}>
+          <label className="text-sm font-medium text-foreground">Document Type</label>
+          <Select value={selectedValue} onValueChange={setSelectedValue} disabled={isLoadingSchemas}>
             <SelectTrigger className="w-full">
-              <SelectValue placeholder={isLoadingSchemas ? 'Loading schemas...' : 'Choose a schema'} />
+              <SelectValue placeholder="Select document type..." />
             </SelectTrigger>
             <SelectContent>
-              {schemas.map(schema => (
-                <SelectItem key={schema.schema_id} value={schema.schema_id}>
-                  {schema.schema_name}
-                </SelectItem>
-              ))}
+              <SelectGroup>
+                <SelectLabel>Standard Applications</SelectLabel>
+                {APPLICATION_TYPES.map(type => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+              <SelectGroup>
+                <SelectLabel>Custom Schemas</SelectLabel>
+                {schemas.map(schema => (
+                  <SelectItem key={schema.schema_id} value={`schema:${schema.schema_id}`}>
+                    {schema.schema_name}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
             </SelectContent>
           </Select>
           {selectedSchema && (
             <p className="text-xs text-muted-foreground">
-              {schemas.find(s => s.schema_id === selectedSchema)?.description}
+              {selectedSchema.description}
             </p>
           )}
         </div>
@@ -165,7 +191,7 @@ export function UploadForm({ schemas, isLoadingSchemas, onExtract, isExtracting 
         <Button
           variant="glow"
           className="w-full"
-          disabled={!selectedSchema || selectedFiles.length === 0 || isExtracting}
+          disabled={!selectedValue || selectedFiles.length === 0 || isExtracting}
           onClick={handleSubmit}
         >
           {isExtracting ? (

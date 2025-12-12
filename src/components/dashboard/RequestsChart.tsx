@@ -3,7 +3,8 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 interface RequestsChartProps {
   data: Array<{
-    timestamp: string;
+    timestamp?: string;
+    bucket?: string;
     requests: number;
     errors: number;
   }>;
@@ -12,7 +13,7 @@ interface RequestsChartProps {
 export function RequestsChart({ data }: RequestsChartProps) {
   const formattedData = data.map(item => ({
     ...item,
-    time: new Date(item.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+    time: new Date(item.timestamp || item.bucket || '').toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
   }));
 
   return (
@@ -35,15 +36,15 @@ export function RequestsChart({ data }: RequestsChartProps) {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis 
-                dataKey="time" 
-                stroke="hsl(var(--muted-foreground))" 
+              <XAxis
+                dataKey="time"
+                stroke="hsl(var(--muted-foreground))"
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
               />
-              <YAxis 
-                stroke="hsl(var(--muted-foreground))" 
+              <YAxis
+                stroke="hsl(var(--muted-foreground))"
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}

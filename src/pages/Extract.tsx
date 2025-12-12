@@ -39,13 +39,19 @@ export default function Extract() {
     fetchSchemas();
   }, []);
 
-  const handleExtract = async (schemaId: string, files: File[]) => {
+  const handleExtract = async (id: string, type: 'schema' | 'application', files: File[]) => {
     setIsExtracting(true);
     setExtractionResult(null);
     setUploadedFile(files[0] || null);
 
     try {
-      const result = await api.extract(schemaId, files);
+      let result;
+      if (type === 'schema') {
+        result = await api.extract(id, files);
+      } else {
+        result = await api.extractSummary(id, files);
+      }
+
       setExtractionResult(result);
       toast({
         title: 'Extraction Complete',

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ExternalLink, Copy, CheckCircle2, AlertCircle } from 'lucide-react';
-import { SessionDetail, BoundingBox, Citation } from '@/lib/api';
+import { SessionDetail, BoundingBox } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 
@@ -20,24 +20,14 @@ export function ResultsView({ result, onFieldHover, highlightedField }: ResultsV
     toast({ title: 'Copied to clipboard' });
   };
 
-  const getCitationForField = (fieldName: string): Citation | undefined => {
-    return result.citations?.find(c => c.field === fieldName);
+  const getCitationForField = (fieldName: string): string | undefined => {
+    return result.citations?.[fieldName];
   };
 
   const renderValue = (value: unknown): string => {
     if (value === null || value === undefined) return '—';
     if (typeof value === 'object') return JSON.stringify(value, null, 2);
     return String(value);
-  };
-
-  const getConfidenceBadge = (confidence: number) => {
-    if (confidence >= 0.9) {
-      return <Badge className="bg-success/20 text-success border-success/30">High</Badge>;
-    }
-    if (confidence >= 0.7) {
-      return <Badge className="bg-warning/20 text-warning border-warning/30">Medium</Badge>;
-    }
-    return <Badge className="bg-destructive/20 text-destructive border-destructive/30">Low</Badge>;
   };
 
   return (
@@ -63,7 +53,7 @@ export function ResultsView({ result, onFieldHover, highlightedField }: ResultsV
             {Object.entries(result.summary || {}).map(([key, value]) => {
               const citation = getCitationForField(key);
               const isHighlighted = highlightedField === key;
-              
+
               return (
                 <div
                   key={key}
@@ -81,7 +71,6 @@ export function ResultsView({ result, onFieldHover, highlightedField }: ResultsV
                       {key.replace(/_/g, ' ')}
                     </span>
                     <div className="flex items-center gap-2">
-                      {citation && getConfidenceBadge(citation.confidence)}
                       <Button
                         variant="ghost"
                         size="icon"
@@ -97,7 +86,7 @@ export function ResultsView({ result, onFieldHover, highlightedField }: ResultsV
                   </p>
                   {citation && (
                     <p className="text-xs text-muted-foreground mt-2 italic">
-                      "{citation.text}" — Page {citation.page}
+                      Source: {citation}
                     </p>
                   )}
                 </div>

@@ -16,7 +16,7 @@ const mockStats: Stats = {
 };
 
 const mockMetrics: MetricPoint[] = Array.from({ length: 24 }, (_, i) => ({
-  timestamp: new Date(Date.now() - (23 - i) * 3600000).toISOString(),
+  bucket: new Date(Date.now() - (23 - i) * 3600000).toISOString(),
   requests: Math.floor(Math.random() * 100) + 20,
   errors: Math.floor(Math.random() * 10),
   avg_ms: Math.floor(Math.random() * 500) + 500,
@@ -130,7 +130,7 @@ export default function Dashboard() {
                   </span>
                 </div>
                 <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className="h-full bg-primary rounded-full transition-all duration-500"
                     style={{ width: '75%' }}
                   />
@@ -145,7 +145,7 @@ export default function Dashboard() {
                   </span>
                 </div>
                 <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className="h-full bg-success rounded-full transition-all duration-500"
                     style={{ width: `${100 - ((stats?.total_errors || 0) / (stats?.total_requests || 1) * 100)}%` }}
                   />
