@@ -13,6 +13,7 @@ import Schemas from "./pages/Schemas";
 import ApiKeys from "./pages/ApiKeys";
 import Settings from "./pages/Settings";
 import Extract from "./pages/Extract";
+import SessionDetail from "./pages/SessionDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -86,6 +87,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Extract />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sessions/:sessionId"
+        element={
+          <ProtectedRoute>
+            <SessionDetail />
           </ProtectedRoute>
         }
       />
