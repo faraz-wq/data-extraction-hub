@@ -69,10 +69,10 @@ export function ResultsView({ result, onFieldHover, highlightedField }: ResultsV
                 >
                   {/* Field Number Badge */}
                   <div className={cn(
-                    'absolute -top-2 -left-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shadow-md',
+                    'absolute -top-3 -left-3 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-lg transition-all duration-200',
                     isHighlighted
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-blue-600 text-white'
+                      ? 'bg-primary text-primary-foreground ring-2 ring-primary/50 ring-offset-2 ring-offset-background scale-110'
+                      : 'bg-blue-600 text-white ring-2 ring-blue-600/30 ring-offset-1 ring-offset-background'
                   )}>
                     {fieldNumber}
                   </div>

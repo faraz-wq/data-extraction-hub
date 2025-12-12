@@ -47,28 +47,57 @@ export function PDFViewerWithBoxes({
   const zoomOut = () => setScale(prev => Math.max(0.5, prev - 0.25));
   const resetZoom = () => setScale(1.0);
 
+  // Padding to add around bounding boxes (in pixels)
+  const PADDING_PIXELS = 8;
+
   // Transform bounding boxes for rendering
-  // Backend provides coordinates as [y_min, x_min, y_max, x_max] normalized to 1000x1000
+  // Backend provides coordinates as [y_min, x_min, y_max, x_max] normalized to 0.0-1.0 range
   // We need to convert to pixel coordinates based on the actual page dimensions
+  // Transform bounding boxes for rendering
+  // Backend provides coordinates as [y_min, x_min, y_max, x_max]
+  // We handle both normalized (0-1) and legacy (1000x1000) coordinates
   const boxes = useMemo(() => {
     if (!pageWidth || !pageHeight) return [];
+
+    console.log('=== Bounding Box Debug Info ===');
+    console.log('Page dimensions:', { pageWidth, pageHeight });
 
     return Object.entries(boundingBoxes).map(([field, box]) => {
       const [y_min, x_min, y_max, x_max] = box.coordinates;
 
-      // Convert from normalized 1000x1000 coordinates to actual pixel coordinates
-      const x = (x_min / 1000) * pageWidth;
-      const y = (y_min / 1000) * pageHeight;
-      const width = ((x_max - x_min) / 1000) * pageWidth;
-      const height = ((y_max - y_min) / 1000) * pageHeight;
+      // Heuristic: If any coordinate is > 2, assume it's 1000x1000 scaled (legacy)
+      // Otherwise assume it's 0-1 normalized (new)
+      const is1000Scale = [y_min, x_min, y_max, x_max].some(c => c > 2);
+
+      let x, y, width, height;
+
+      if (is1000Scale) {
+        // Convert from 1000x1000
+        x = (x_min / 1000) * pageWidth;
+        y = (y_min / 1000) * pageHeight;
+        width = ((x_max - x_min) / 1000) * pageWidth;
+        height = ((y_max - y_min) / 1000) * pageHeight;
+      } else {
+        // Convert from 0-1 normalized
+        x = x_min * pageWidth;
+        y = y_min * pageHeight;
+        width = (x_max - x_min) * pageWidth;
+        height = (y_max - y_min) * pageHeight;
+      }
+
+      // Add padding to expand the bounding box area
+      const paddedX = Math.max(0, x - PADDING_PIXELS);
+      const paddedY = Math.max(0, y - PADDING_PIXELS);
+      const paddedWidth = width + (PADDING_PIXELS * 2);
+      const paddedHeight = height + (PADDING_PIXELS * 2);
 
       return {
         field,
         page: box.page,
-        x,
-        y,
-        width,
-        height,
+        x: paddedX,
+        y: paddedY,
+        width: paddedWidth,
+        height: paddedHeight,
       };
     });
   }, [boundingBoxes, pageWidth, pageHeight]);
@@ -174,23 +203,24 @@ export function PDFViewerWithBoxes({
                 >
                   {/* Field Number Badge */}
                   <div className={cn(
-                    'absolute -top-3 -left-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shadow-md',
+                    'absolute -top-4 -left-4 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-lg transition-all duration-200',
                     isHighlighted
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-blue-600 text-white'
+                      ? 'bg-primary text-primary-foreground ring-2 ring-primary/50 ring-offset-2 ring-offset-background scale-110'
+                      : 'bg-blue-600 text-white ring-2 ring-blue-600/30 ring-offset-1 ring-offset-background hover:scale-110 hover:bg-blue-700'
                   )}>
                     {fieldNumber}
                   </div>
 
                   {/* Field Label - Always visible on hover or when highlighted */}
                   {isHighlighted && (
-                    <span className="absolute -top-8 left-8 px-3 py-1 bg-primary text-primary-foreground text-xs font-medium rounded shadow-lg whitespace-nowrap z-30">
+                    <span className="absolute -top-10 left-10 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-md shadow-lg whitespace-nowrap z-30 ring-2 ring-primary/50">
                       {box.field.replace(/_/g, ' ')}
                     </span>
                   )}
                 </div>
               );
             })}
+
           </div>
         </div>
 
