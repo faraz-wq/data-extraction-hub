@@ -363,7 +363,21 @@ class ApiClient {
       throw new Error(error.detail || `Extraction failed: ${response.status}`);
     }
 
-    return response.json();
+    const data = await response.json();
+
+    // Transform flat response to SessionDetail format
+    const { session_id, bounding_boxes, citations, annotated_files, _token_usage, ...summaryFields } = data;
+
+    return {
+      session_id: session_id || 'temp-' + Date.now(),
+      application_type: applicationType,
+      created_at: new Date().toISOString(),
+      file_count: files.length,
+      summary: summaryFields,
+      bounding_boxes: bounding_boxes || {},
+      citations: citations || {},
+      documents: [],
+    };
   }
 }
 
