@@ -24,10 +24,27 @@ export default function Sessions() {
 
   useEffect(() => {
     const fetchSessions = async () => {
+      setIsLoading(true);
       try {
-        const data = await api.getSessions();
-        setSessions(data);
-      } catch {
+        // First, fetch sessions from the v1 endpoint (already existing functionality)
+        const v1Sessions = await api.getSessions();
+        setSessions(v1Sessions);
+
+        // Additionally, for demonstration purposes, also call the non-v1 /sessions endpoint
+        try {
+          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/sessions`);
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Sessions fetched from /sessions endpoint:', data);
+            // Note: The /sessions endpoint returns a different format than the v1 API
+            // For demo purposes, we're just logging this data
+          }
+        } catch (error) {
+          console.error('Error fetching from /sessions endpoint:', error);
+          // This is expected if authentication is required or if the endpoint is not accessible
+        }
+      } catch (error) {
+        console.error('Error fetching sessions from v1 endpoint:', error);
         setSessions(mockSessions);
       } finally {
         setIsLoading(false);

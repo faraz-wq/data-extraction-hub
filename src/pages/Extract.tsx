@@ -53,6 +53,31 @@ export default function Extract() {
       }
 
       setExtractionResult(result);
+
+      // Additional demo calls: fetch session details and list all sessions to demonstrate both endpoints
+      if (result.session_id) {
+        try {
+          const sessionDetails = await api.getSession(result.session_id);
+          console.log('Session details fetched from v1 endpoint:', sessionDetails);
+          // This is just for demo purposes - showing that the session exists in the v1 endpoint
+        } catch (sessionError) {
+          console.error('Error fetching session from v1 endpoint:', sessionError);
+          // This might happen if session isn't immediately available or there's a permissions issue
+        }
+      }
+
+      // Additional demo call: also fetch the list of all sessions from the non-v1 endpoint
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/sessions`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('All sessions fetched from /sessions endpoint:', data);
+          // This is for demo purposes - showing that the /sessions endpoint can be accessed
+        }
+      } catch (allSessionsError) {
+        console.error('Error fetching all sessions from /sessions endpoint:', allSessionsError);
+      }
+
       toast({
         title: 'Extraction Complete',
         description: `Successfully extracted ${Object.keys(result.summary || {}).length} fields`,

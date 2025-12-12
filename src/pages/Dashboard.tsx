@@ -40,6 +40,17 @@ export default function Dashboard() {
         ]);
         setStats(statsData);
         setMetrics(metricsData);
+
+        // Additional demo call: fetch sessions from the /sessions endpoint
+        try {
+          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/sessions`);
+          if (response.ok) {
+            const sessionsData = await response.json();
+            console.log('Sessions fetched from /sessions endpoint (for dashboard demo):', sessionsData);
+          }
+        } catch (error) {
+          console.error('Error fetching sessions from /sessions endpoint:', error);
+        }
       } catch {
         // Use mock data for demo
         setStats(mockStats);
