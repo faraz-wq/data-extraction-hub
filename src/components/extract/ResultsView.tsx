@@ -50,22 +50,33 @@ export function ResultsView({ result, onFieldHover, highlightedField }: ResultsV
         {/* Extracted Fields */}
         <ScrollArea className="max-h-[500px]">
           <div className="space-y-3 pr-4">
-            {Object.entries(result.summary || {}).map(([key, value]) => {
+            {Object.entries(result.summary || {}).map(([key, value], index) => {
               const citation = getCitationForField(key);
               const isHighlighted = highlightedField === key;
+              const fieldNumber = index + 1;
 
               return (
                 <div
                   key={key}
                   className={cn(
-                    'p-3 rounded-lg border transition-all duration-200 cursor-pointer',
+                    'p-3 rounded-lg border transition-all duration-200 cursor-pointer relative',
                     isHighlighted
-                      ? 'border-primary bg-primary/10'
-                      : 'border-border bg-secondary/30 hover:border-primary/50'
+                      ? 'border-primary bg-primary/10 shadow-md'
+                      : 'border-border bg-secondary/30 hover:border-primary/50 hover:bg-primary/5'
                   )}
                   onMouseEnter={() => onFieldHover?.(key)}
                   onMouseLeave={() => onFieldHover?.(null)}
                 >
+                  {/* Field Number Badge */}
+                  <div className={cn(
+                    'absolute -top-2 -left-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shadow-md',
+                    isHighlighted
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-blue-600 text-white'
+                  )}>
+                    {fieldNumber}
+                  </div>
+
                   <div className="flex items-start justify-between gap-2 mb-1">
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                       {key.replace(/_/g, ' ')}

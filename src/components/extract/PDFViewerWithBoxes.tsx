@@ -48,17 +48,30 @@ export function PDFViewerWithBoxes({
   const resetZoom = () => setScale(1.0);
 
   // Transform bounding boxes for rendering
-  const boxes = useMemo(() => Object.entries(boundingBoxes).map(([field, box]) => {
-    const [x1, y1, x2, y2] = box.coordinates;
-    return {
-      field,
-      page: box.page,
-      x: x1,
-      y: y1,
-      width: x2 - x1,
-      height: y2 - y1,
-    };
-  }), [boundingBoxes]);
+  // Backend provides coordinates as [y_min, x_min, y_max, x_max] normalized to 1000x1000
+  // We need to convert to pixel coordinates based on the actual page dimensions
+  const boxes = useMemo(() => {
+    if (!pageWidth || !pageHeight) return [];
+
+    return Object.entries(boundingBoxes).map(([field, box]) => {
+      const [y_min, x_min, y_max, x_max] = box.coordinates;
+
+      // Convert from normalized 1000x1000 coordinates to actual pixel coordinates
+      const x = (x_min / 1000) * pageWidth;
+      const y = (y_min / 1000) * pageHeight;
+      const width = ((x_max - x_min) / 1000) * pageWidth;
+      const height = ((y_max - y_min) / 1000) * pageHeight;
+
+      return {
+        field,
+        page: box.page,
+        x,
+        y,
+        width,
+        height,
+      };
+    });
+  }, [boundingBoxes, pageWidth, pageHeight]);
 
   // Filter bounding boxes for current page
   const currentPageBoxes = boxes.filter(box => box.page === pageNumber);
@@ -85,7 +98,7 @@ export function PDFViewerWithBoxes({
   }
 
   return (
-    <Card variant="glass" className="h-full flex flex-col">
+    <Card variant="glass" className="h-full max-h-[800px] flex flex-col">
       <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
         <CardTitle className="text-lg">Document Preview</CardTitle>
         <div className="flex items-center gap-1">
@@ -103,13 +116,13 @@ export function PDFViewerWithBoxes({
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 overflow-hidden flex flex-col">
+      <CardContent className="flex-1 overflow-hidden flex flex-col p-4">
         {/* PDF Container */}
         <div
           ref={containerRef}
-          className="flex-1 overflow-auto bg-secondary/30 rounded-lg relative"
+          className="flex-1 overflow-auto bg-secondary/30 rounded-lg flex items-start justify-center p-4"
         >
-          <div className="relative inline-block min-w-full">
+          <div className="relative inline-block">
             <Document
               file={file}
               onLoadSuccess={onDocumentLoadSuccess}
@@ -136,26 +149,42 @@ export function PDFViewerWithBoxes({
             {/* Bounding Box Overlays */}
             {currentPageBoxes.map((box, index) => {
               const isHighlighted = highlightedField === box.field;
+              // Find the global index of this field across all boxes
+              const globalIndex = boxes.findIndex(b => b.field === box.field);
+              const fieldNumber = globalIndex + 1;
+
               return (
                 <div
                   key={`${box.field}-${index}`}
                   className={cn(
-                    'absolute border-2 transition-all duration-200 cursor-pointer',
+                    'absolute border-3 transition-all duration-200 cursor-pointer rounded-sm',
                     isHighlighted
-                      ? 'border-primary bg-primary/20 shadow-lg shadow-primary/30'
-                      : 'border-primary/50 bg-primary/10 hover:border-primary hover:bg-primary/20'
+                      ? 'border-primary bg-primary/30 shadow-lg shadow-primary/50 z-20'
+                      : 'border-blue-500/60 bg-blue-500/15 hover:border-yellow-500 hover:bg-yellow-500/25 hover:shadow-md z-10'
                   )}
                   style={{
                     left: `${box.x * scale}px`,
                     top: `${box.y * scale}px`,
                     width: `${box.width * scale}px`,
                     height: `${box.height * scale}px`,
+                    borderWidth: '3px',
                   }}
                   onClick={() => onFieldClick?.(box.field)}
-                  title={box.field}
+                  title={`${fieldNumber}. ${box.field}`}
                 >
+                  {/* Field Number Badge */}
+                  <div className={cn(
+                    'absolute -top-3 -left-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shadow-md',
+                    isHighlighted
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-blue-600 text-white'
+                  )}>
+                    {fieldNumber}
+                  </div>
+
+                  {/* Field Label - Always visible on hover or when highlighted */}
                   {isHighlighted && (
-                    <span className="absolute -top-6 left-0 px-2 py-0.5 bg-primary text-primary-foreground text-xs rounded whitespace-nowrap">
+                    <span className="absolute -top-8 left-8 px-3 py-1 bg-primary text-primary-foreground text-xs font-medium rounded shadow-lg whitespace-nowrap z-30">
                       {box.field.replace(/_/g, ' ')}
                     </span>
                   )}
