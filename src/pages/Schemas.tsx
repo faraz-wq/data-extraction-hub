@@ -67,8 +67,10 @@ export default function Schemas() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
+      <div className="flex items-center justify-center h-[calc(100vh-100px)]">
+        <h1 className="text-4xl font-bold text-muted-foreground">Coming Soon</h1>
+      </div>
+      {/* <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-foreground">Schemas</h1>
@@ -88,7 +90,6 @@ export default function Schemas() {
           </div>
         </div>
 
-        {/* Schemas Grid */}
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
@@ -158,7 +159,6 @@ export default function Schemas() {
         )}
       </div>
 
-      {/* Delete Confirmation */}
       <AlertDialog open={!!deleteSchema} onOpenChange={() => setDeleteSchema(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -174,7 +174,7 @@ export default function Schemas() {
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog>
+      </AlertDialog> */}
     </DashboardLayout>
   );
 }

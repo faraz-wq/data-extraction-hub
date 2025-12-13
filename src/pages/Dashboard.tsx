@@ -83,14 +83,15 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8">
-        {/* Header */}
+      <div className="flex items-center justify-center h-[calc(100vh-100px)]">
+        <h1 className="text-4xl font-bold text-muted-foreground">Coming Soon</h1>
+      </div>
+      {/* <div className="space-y-8">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground mt-1">Overview of your extraction activity</p>
         </div>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
             title="Total Requests"
@@ -113,13 +114,11 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <RequestsChart data={metrics} />
           </div>
 
-          {/* Quick Stats */}
           <Card className="animate-fade-in">
             <CardHeader>
               <CardTitle className="text-base">Last 24 Hours</CardTitle>
@@ -163,7 +162,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </div> */}
     </DashboardLayout>
   );
 }

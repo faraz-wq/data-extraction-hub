@@ -56,8 +56,10 @@ export default function Sessions() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
+      <div className="flex items-center justify-center h-[calc(100vh-100px)]">
+        <h1 className="text-4xl font-bold text-muted-foreground">Coming Soon</h1>
+      </div>
+      {/* <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-foreground">Sessions</h1>
@@ -72,7 +74,6 @@ export default function Sessions() {
           </div>
         </div>
 
-        {/* Sessions List */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Recent Sessions</CardTitle>
@@ -125,7 +126,6 @@ export default function Sessions() {
           </CardContent>
         </Card>
 
-        {/* Pagination */}
         {filteredSessions.length > 0 && (
           <div className="flex justify-center gap-2">
             <Button variant="outline" size="sm" disabled>
@@ -136,7 +136,7 @@ export default function Sessions() {
             </Button>
           </div>
         )}
-      </div>
+      </div> */}
     </DashboardLayout>
   );
 }

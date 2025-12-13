@@ -8,8 +8,6 @@ const navigation = [
   { name: 'Extract', href: '/extract' },
   { name: 'Schemas', href: '/schemas' },
   { name: 'API Keys', href: '/api-keys' },
-  { name: 'Logs', href: '/logs' },
-  { name: 'Metrics', href: '/metrics' },
 ];
 
 export function Sidebar() {
