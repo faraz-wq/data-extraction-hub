@@ -2,7 +2,6 @@ import { useState, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, X, FileText, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Schema } from '@/lib/api';
 
@@ -77,9 +76,9 @@ export function UploadForm({ schemas, isLoadingSchemas, onExtract, isExtracting 
   const selectedSchema = schemas.find(s => `schema:${s.schema_id}` === selectedValue);
 
   return (
-    <Card variant="glass" className="h-fit">
+    <Card className="h-fit">
       <CardHeader>
-        <CardTitle className="text-lg">Upload Documents</CardTitle>
+        <CardTitle className="text-base">Upload Documents</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Type Selector */}
@@ -120,8 +119,8 @@ export function UploadForm({ schemas, isLoadingSchemas, onExtract, isExtracting 
           className={cn(
             'relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200',
             isDragging
-              ? 'border-primary bg-primary/5'
-              : 'border-border hover:border-primary/50 hover:bg-secondary/30',
+              ? 'border-foreground bg-secondary'
+              : 'border-border hover:border-foreground/50',
             'cursor-pointer'
           )}
           onDrop={handleDrop}
@@ -137,10 +136,6 @@ export function UploadForm({ schemas, isLoadingSchemas, onExtract, isExtracting 
             onChange={handleFileSelect}
             className="hidden"
           />
-          <Upload className={cn(
-            'w-10 h-10 mx-auto mb-3 transition-colors',
-            isDragging ? 'text-primary' : 'text-muted-foreground'
-          )} />
           <p className="text-sm font-medium text-foreground mb-1">
             Drop files here or click to browse
           </p>
@@ -159,10 +154,9 @@ export function UploadForm({ schemas, isLoadingSchemas, onExtract, isExtracting 
               {selectedFiles.map((file, index) => (
                 <div
                   key={`${file.name}-${index}`}
-                  className="flex items-center gap-3 p-3 bg-secondary/50 rounded-lg group"
+                  className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg group"
                 >
-                  <FileText className="w-5 h-5 text-primary shrink-0" />
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">
                       {file.name}
                     </p>
@@ -172,14 +166,14 @@ export function UploadForm({ schemas, isLoadingSchemas, onExtract, isExtracting 
                   </div>
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                    size="sm"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity"
                     onClick={(e) => {
                       e.stopPropagation();
                       removeFile(index);
                     }}
                   >
-                    <X className="w-4 h-4" />
+                    Remove
                   </Button>
                 </div>
               ))}
@@ -189,22 +183,11 @@ export function UploadForm({ schemas, isLoadingSchemas, onExtract, isExtracting 
 
         {/* Submit Button */}
         <Button
-          variant="glow"
           className="w-full"
           disabled={!selectedValue || selectedFiles.length === 0 || isExtracting}
           onClick={handleSubmit}
         >
-          {isExtracting ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Extracting...
-            </>
-          ) : (
-            <>
-              <Upload className="w-4 h-4" />
-              Extract Data
-            </>
-          )}
+          {isExtracting ? 'Extracting...' : 'Extract Data'}
         </Button>
       </CardContent>
     </Card>

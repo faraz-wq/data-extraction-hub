@@ -1,10 +1,8 @@
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ExternalLink, Copy, CheckCircle2, AlertCircle } from 'lucide-react';
-import { SessionDetail, BoundingBox } from '@/lib/api';
+import { SessionDetail } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 
@@ -31,15 +29,12 @@ export function ResultsView({ result, onFieldHover, highlightedField }: ResultsV
   };
 
   return (
-    <Card variant="glass" className="h-fit">
+    <Card className="h-fit">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Extraction Results</CardTitle>
+          <CardTitle className="text-base">Extraction Results</CardTitle>
           <Button variant="outline" size="sm" asChild>
-            <Link to={`/sessions/${result.session_id}`}>
-              <ExternalLink className="w-4 h-4" />
-              View Session
-            </Link>
+            <Link to={`/sessions/${result.session_id}`}>View Session</Link>
           </Button>
         </div>
         <p className="text-xs text-muted-foreground font-mono mt-1">
@@ -61,42 +56,40 @@ export function ResultsView({ result, onFieldHover, highlightedField }: ResultsV
                   className={cn(
                     'p-3 rounded-lg border transition-all duration-200 cursor-pointer relative',
                     isHighlighted
-                      ? 'border-primary bg-primary/10 shadow-md'
-                      : 'border-border bg-secondary/30 hover:border-primary/50 hover:bg-primary/5'
+                      ? 'border-foreground bg-secondary'
+                      : 'border-border hover:border-foreground/50'
                   )}
                   onMouseEnter={() => onFieldHover?.(key)}
                   onMouseLeave={() => onFieldHover?.(null)}
                 >
                   {/* Field Number Badge */}
                   <div className={cn(
-                    'absolute -top-3 -left-3 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-lg transition-all duration-200',
+                    'absolute -top-2 -left-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium',
                     isHighlighted
-                      ? 'bg-primary text-primary-foreground ring-2 ring-primary/50 ring-offset-2 ring-offset-background scale-110'
-                      : 'bg-blue-600 text-white ring-2 ring-blue-600/30 ring-offset-1 ring-offset-background'
+                      ? 'bg-foreground text-background'
+                      : 'bg-muted text-muted-foreground'
                   )}>
                     {fieldNumber}
                   </div>
 
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  <div className="flex items-start justify-between gap-2 mb-1 pl-4">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wide">
                       {key.replace(/_/g, ' ')}
                     </span>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => copyToClipboard(renderValue(value))}
-                      >
-                        <Copy className="w-3 h-3" />
-                      </Button>
-                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 text-xs"
+                      onClick={() => copyToClipboard(renderValue(value))}
+                    >
+                      Copy
+                    </Button>
                   </div>
-                  <p className="text-sm text-foreground whitespace-pre-wrap">
+                  <p className="text-sm text-foreground whitespace-pre-wrap pl-4">
                     {renderValue(value)}
                   </p>
                   {citation && (
-                    <p className="text-xs text-muted-foreground mt-2 italic">
+                    <p className="text-xs text-muted-foreground mt-2 italic pl-4">
                       Source: {citation}
                     </p>
                   )}
@@ -107,16 +100,13 @@ export function ResultsView({ result, onFieldHover, highlightedField }: ResultsV
         </ScrollArea>
 
         {/* Summary Stats */}
-        <div className="flex items-center gap-4 pt-4 border-t border-border">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <CheckCircle2 className="w-4 h-4 text-success" />
-            {Object.keys(result.summary || {}).length} fields extracted
-          </div>
+        <div className="flex items-center gap-4 pt-4 border-t border-border text-xs text-muted-foreground">
+          <span>{Object.keys(result.summary || {}).length} fields extracted</span>
           {result.documents && (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <AlertCircle className="w-4 h-4 text-primary" />
-              {result.documents.length} documents processed
-            </div>
+            <>
+              <span>·</span>
+              <span>{result.documents.length} documents processed</span>
+            </>
           )}
         </div>
       </CardContent>

@@ -5,7 +5,6 @@ import { ResultsView } from '@/components/extract/ResultsView';
 import { PDFViewerWithBoxes } from '@/components/extract/PDFViewerWithBoxes';
 import { api, Schema, SessionDetail } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
-import { FileSearch, Sparkles } from 'lucide-react';
 
 export default function Extract() {
   const [schemas, setSchemas] = useState<Schema[]>([]);
@@ -50,25 +49,20 @@ export default function Extract() {
 
       setExtractionResult(result);
 
-      // Additional demo calls: fetch session details and list all sessions to demonstrate both endpoints
       if (result.session_id) {
         try {
           const sessionDetails = await api.getSession(result.session_id);
           console.log('Session details fetched from v1 endpoint:', sessionDetails);
-          // This is just for demo purposes - showing that the session exists in the v1 endpoint
         } catch (sessionError) {
           console.error('Error fetching session from v1 endpoint:', sessionError);
-          // This might happen if session isn't immediately available or there's a permissions issue
         }
       }
 
-      // Additional demo call: also fetch the list of all sessions from the non-v1 endpoint
       try {
         const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/sessions`);
         if (response.ok) {
           const data = await response.json();
           console.log('All sessions fetched from /sessions endpoint:', data);
-          // This is for demo purposes - showing that the /sessions endpoint can be accessed
         }
       } catch (allSessionsError) {
         console.error('Error fetching all sessions from /sessions endpoint:', allSessionsError);
@@ -102,7 +96,7 @@ export default function Extract() {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Extract</h1>
+          <h1 className="text-2xl font-semibold text-foreground">Extract</h1>
           <p className="text-muted-foreground mt-1">
             Upload documents and extract structured data using your schemas
           </p>
@@ -137,13 +131,11 @@ export default function Extract() {
                 />
               </>
             ) : (
-              <div className="flex flex-col items-center justify-center h-[500px] rounded-xl border border-dashed border-border bg-card/50">
+              <div className="flex flex-col items-center justify-center h-[500px] rounded-xl border border-dashed border-border">
                 {isExtracting ? (
                   <div className="text-center">
-                    <div className="w-16 h-16 mx-auto mb-4 relative">
-                      <Sparkles className="w-16 h-16 text-primary animate-pulse" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                    <div className="w-8 h-8 mx-auto mb-4 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" />
+                    <h3 className="text-base font-medium text-foreground mb-2">
                       Processing Documents
                     </h3>
                     <p className="text-sm text-muted-foreground">
@@ -152,8 +144,7 @@ export default function Extract() {
                   </div>
                 ) : (
                   <div className="text-center">
-                    <FileSearch className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                    <h3 className="text-base font-medium text-foreground mb-2">
                       No Extraction Results
                     </h3>
                     <p className="text-sm text-muted-foreground max-w-md">

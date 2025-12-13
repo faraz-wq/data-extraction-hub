@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { api, Schema } from '@/lib/api';
-import { Database, Plus, Search, Edit2, Trash2, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   AlertDialog,
@@ -72,24 +71,19 @@ export default function Schemas() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Schemas</h1>
+            <h1 className="text-2xl font-semibold text-foreground">Schemas</h1>
             <p className="text-muted-foreground mt-1">Define extraction templates for your documents</p>
           </div>
           <div className="flex gap-3">
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <div className="w-full sm:w-64">
               <Input
                 placeholder="Search schemas..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
               />
             </div>
-            <Button asChild variant="glow">
-              <Link to="/schemas/new">
-                <Plus className="w-4 h-4" />
-                New Schema
-              </Link>
+            <Button asChild>
+              <Link to="/schemas/new">New Schema</Link>
             </Button>
           </div>
         </div>
@@ -108,15 +102,11 @@ export default function Schemas() {
             ))}
           </div>
         ) : filteredSchemas.length === 0 ? (
-          <Card variant="glass" className="p-12 text-center">
-            <Database className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">No schemas found</h3>
+          <Card className="p-12 text-center">
+            <h3 className="text-lg font-medium text-foreground mb-2">No schemas found</h3>
             <p className="text-muted-foreground mb-4">Create your first schema to start extracting data</p>
-            <Button asChild variant="glow">
-              <Link to="/schemas/new">
-                <Plus className="w-4 h-4" />
-                Create Schema
-              </Link>
+            <Button asChild>
+              <Link to="/schemas/new">Create Schema</Link>
             </Button>
           </Card>
         ) : (
@@ -124,50 +114,41 @@ export default function Schemas() {
             {filteredSchemas.map((schema, index) => (
               <Card
                 key={schema.schema_id}
-                variant="interactive"
-                className={cn('group animate-fade-in')}
+                className={cn('group animate-fade-in hover:border-foreground/20 transition-colors')}
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
-                      <Database className="w-5 h-5 text-primary" />
-                    </div>
+                    <CardTitle className="text-base">{schema.schema_name}</CardTitle>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                        <Link to={`/schemas/${schema.schema_id}/edit`}>
-                          <Edit2 className="w-4 h-4" />
-                        </Link>
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link to={`/schemas/${schema.schema_id}/edit`}>Edit</Link>
                       </Button>
                       <Button
                         variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 hover:text-destructive"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
                         onClick={(e) => {
                           e.preventDefault();
                           setDeleteSchema(schema);
                         }}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        Delete
                       </Button>
                     </div>
                   </div>
-                  <CardTitle className="text-lg">{schema.schema_name}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
                     {schema.description}
                   </p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
-                      {schema.fields.length} fields
-                    </span>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{schema.fields.length} fields</span>
                     <Link
                       to={`/schemas/${schema.schema_id}/edit`}
-                      className="text-xs text-primary flex items-center gap-1 hover:underline"
+                      className="hover:text-foreground transition-colors"
                     >
-                      View details
-                      <ChevronRight className="w-3 h-3" />
+                      View details →
                     </Link>
                   </div>
                 </CardContent>
