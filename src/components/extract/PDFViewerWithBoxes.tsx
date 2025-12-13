@@ -13,7 +13,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 
 interface PDFViewerWithBoxesProps {
   file: File | string | null;
-  boundingBoxes?: Record<string, BoundingBox>;
+  boundingBoxes?: Record<string, BoundingBox[]>;
   highlightedField?: string | null;
   onFieldClick?: (field: string) => void;
 }
@@ -48,11 +48,9 @@ export function PDFViewerWithBoxes({
   const resetZoom = () => setScale(1.0);
 
   // Padding to add around bounding boxes (in pixels)
-  const PADDING_PIXELS = 8;
+  const PADDING_X = 12;
+  const PADDING_Y = 6;
 
-  // Transform bounding boxes for rendering
-  // Backend provides coordinates as [y_min, x_min, y_max, x_max] normalized to 0.0-1.0 range
-  // We need to convert to pixel coordinates based on the actual page dimensions
   // Transform bounding boxes for rendering
   // Backend provides coordinates as [y_min, x_min, y_max, x_max]
   // We handle both normalized (0-1) and legacy (1000x1000) coordinates
@@ -62,43 +60,49 @@ export function PDFViewerWithBoxes({
     console.log('=== Bounding Box Debug Info ===');
     console.log('Page dimensions:', { pageWidth, pageHeight });
 
-    return Object.entries(boundingBoxes).map(([field, box]) => {
-      const [y_min, x_min, y_max, x_max] = box.coordinates;
+    return Object.entries(boundingBoxes).flatMap(([field, fieldBoxes]) => {
+      // Handle both array (new) and single object (legacy) formats
+      const boxList = Array.isArray(fieldBoxes) ? fieldBoxes : [fieldBoxes];
 
-      // Heuristic: If any coordinate is > 2, assume it's 1000x1000 scaled (legacy)
-      // Otherwise assume it's 0-1 normalized (new)
-      const is1000Scale = [y_min, x_min, y_max, x_max].some(c => c > 2);
+      return boxList.map((box, index) => {
+        const [y_min, x_min, y_max, x_max] = box.coordinates;
 
-      let x, y, width, height;
+        // Heuristic: If any coordinate is > 2, assume it's 1000x1000 scaled (legacy)
+        // Otherwise assume it's 0-1 normalized (new)
+        const is1000Scale = [y_min, x_min, y_max, x_max].some(c => c > 2);
 
-      if (is1000Scale) {
-        // Convert from 1000x1000
-        x = (x_min / 1000) * pageWidth;
-        y = (y_min / 1000) * pageHeight;
-        width = ((x_max - x_min) / 1000) * pageWidth;
-        height = ((y_max - y_min) / 1000) * pageHeight;
-      } else {
-        // Convert from 0-1 normalized
-        x = x_min * pageWidth;
-        y = y_min * pageHeight;
-        width = (x_max - x_min) * pageWidth;
-        height = (y_max - y_min) * pageHeight;
-      }
+        let x, y, width, height;
 
-      // Add padding to expand the bounding box area
-      const paddedX = Math.max(0, x - PADDING_PIXELS);
-      const paddedY = Math.max(0, y - PADDING_PIXELS);
-      const paddedWidth = width + (PADDING_PIXELS * 2);
-      const paddedHeight = height + (PADDING_PIXELS * 2);
+        if (is1000Scale) {
+          // Convert from 1000x1000
+          x = (x_min / 1000) * pageWidth;
+          y = (y_min / 1000) * pageHeight;
+          width = ((x_max - x_min) / 1000) * pageWidth;
+          height = ((y_max - y_min) / 1000) * pageHeight;
+        } else {
+          // Convert from 0-1 normalized
+          x = x_min * pageWidth;
+          y = y_min * pageHeight;
+          width = (x_max - x_min) * pageWidth;
+          height = (y_max - y_min) * pageHeight;
+        }
 
-      return {
-        field,
-        page: box.page,
-        x: paddedX,
-        y: paddedY,
-        width: paddedWidth,
-        height: paddedHeight,
-      };
+        // Add padding to expand the bounding box area
+        const paddedX = Math.max(0, x - PADDING_X);
+        const paddedY = Math.max(0, y - PADDING_Y);
+        const paddedWidth = width + (PADDING_X * 2);
+        const paddedHeight = height + (PADDING_Y * 2);
+
+        return {
+          field,
+          index, // Store index to differentiate multiple boxes for same field
+          page: box.page,
+          x: paddedX,
+          y: paddedY,
+          width: paddedWidth,
+          height: paddedHeight,
+        };
+      });
     });
   }, [boundingBoxes, pageWidth, pageHeight]);
 
@@ -184,7 +188,7 @@ export function PDFViewerWithBoxes({
 
               return (
                 <div
-                  key={`${box.field}-${index}`}
+                  key={`${box.field}-${box.index}`}
                   className={cn(
                     'absolute border-3 transition-all duration-200 cursor-pointer rounded-sm',
                     isHighlighted

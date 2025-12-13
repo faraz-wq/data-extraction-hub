@@ -40,7 +40,7 @@ interface Session {
 
 interface SessionDetail extends Session {
   summary: Record<string, unknown>;
-  bounding_boxes: Record<string, BoundingBox>;
+  bounding_boxes: Record<string, BoundingBox[]>;
   citations: Record<string, string>;
   documents: Document[];
 }

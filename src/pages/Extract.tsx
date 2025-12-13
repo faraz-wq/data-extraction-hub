@@ -7,14 +7,6 @@ import { api, Schema, SessionDetail } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { FileSearch, Sparkles } from 'lucide-react';
 
-// Mock schemas for development
-const mockSchemas: Schema[] = [
-  { schema_id: 'sch_invoice', schema_name: 'Invoice', description: 'Extract invoice data including vendor, amounts, and line items', fields: [{ name: 'vendor_name', type: 'string', description: 'Vendor name', required: true }, { name: 'total_amount', type: 'number', description: 'Total amount', required: true }, { name: 'date', type: 'date', description: 'Invoice date', required: true }] },
-  { schema_id: 'sch_receipt', schema_name: 'Receipt', description: 'Extract receipt data from retail purchases', fields: [{ name: 'store_name', type: 'string', description: 'Store name', required: true }, { name: 'total', type: 'number', description: 'Total', required: true }] },
-  { schema_id: 'sch_contract', schema_name: 'Contract', description: 'Extract key terms from legal contracts', fields: [{ name: 'parties', type: 'array', description: 'Contract parties', required: true }, { name: 'effective_date', type: 'date', description: 'Start date', required: true }, { name: 'value', type: 'number', description: 'Contract value', required: false }] },
-  { schema_id: 'sch_id', schema_name: 'ID Document', description: 'Extract data from identity documents', fields: [{ name: 'full_name', type: 'string', description: 'Full name', required: true }, { name: 'id_number', type: 'string', description: 'ID number', required: true }, { name: 'expiry_date', type: 'date', description: 'Expiry date', required: true }] },
-];
-
 export default function Extract() {
   const [schemas, setSchemas] = useState<Schema[]>([]);
   const [isLoadingSchemas, setIsLoadingSchemas] = useState(true);
@@ -28,9 +20,13 @@ export default function Extract() {
       try {
         const data = await api.getSchemas();
         setSchemas(data);
-      } catch {
-        // Use mock data if API fails
-        setSchemas(mockSchemas);
+      } catch (error) {
+        console.error('Failed to fetch schemas:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load schemas',
+          variant: 'destructive',
+        });
       } finally {
         setIsLoadingSchemas(false);
       }

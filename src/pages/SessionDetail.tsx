@@ -6,65 +6,44 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PDFViewerWithBoxes } from '@/components/extract/PDFViewerWithBoxes';
 import { api, SessionDetail as SessionDetailType, BoundingBox } from '@/lib/api';
-import { 
-  ArrowLeft, 
-  Calendar, 
-  Files, 
-  FileText, 
-  Copy, 
+import {
+  ArrowLeft,
+  Calendar,
+  Files,
+  FileText,
+  Copy,
   Check,
   ExternalLink
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 
-// Mock data for development
-const mockSessionDetail: SessionDetailType = {
-  session_id: 'sess_abc123',
-  application_type: 'invoice',
-  created_at: '2024-01-15T10:30:00Z',
-  file_count: 1,
-  summary: {
-    vendor_name: 'Acme Corporation',
-    invoice_number: 'INV-2024-001',
-    date: '2024-01-15',
-    total_amount: 1250.00,
-    tax_amount: 250.00,
-    subtotal: 1000.00,
-    due_date: '2024-02-15',
-    payment_terms: 'Net 30',
-  },
-  bounding_boxes: {
-    vendor_name: { filename: 'invoice.pdf', page: 1, coordinates: [50, 100, 200, 130] },
-    total_amount: { filename: 'invoice.pdf', page: 1, coordinates: [400, 500, 500, 530] },
-  },
-  citations: {
-    vendor_name: 'Page 1, top left',
-    total_amount: 'Page 1, bottom right',
-  },
-  documents: [
-    { id: 'doc_1', filename: 'invoice.pdf', url: '/placeholder.svg' },
-  ],
-};
+
 
 export default function SessionDetail() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const [session, setSession] = useState<SessionDetailType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [highlightedField, setHighlightedField] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSession = async () => {
       if (!sessionId) return;
-      
+
       setIsLoading(true);
       try {
         const data = await api.getSession(sessionId);
         setSession(data);
-      } catch {
-        // Use mock data if API fails
-        setSession(mockSessionDetail);
+      } catch (err) {
+        console.error('Failed to fetch session:', err);
+        setError('Failed to load session details. Please try again later.');
+        toast({
+          title: 'Error',
+          description: 'Failed to load session details',
+          variant: 'destructive',
+        });
       } finally {
         setIsLoading(false);
       }
@@ -136,8 +115,8 @@ export default function SessionDetail() {
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center py-20">
           <FileText className="w-16 h-16 text-muted-foreground mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Session Not Found</h2>
-          <p className="text-muted-foreground mb-4">The session you're looking for doesn't exist.</p>
+          <h2 className="text-xl font-semibold mb-2">{error || 'Session Not Found'}</h2>
+          <p className="text-muted-foreground mb-4">{error ? 'There was a problem loading the session.' : "The session you're looking for doesn't exist."}</p>
           <Button asChild>
             <Link to="/sessions">
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -197,7 +176,7 @@ export default function SessionDetail() {
               {Object.entries(session.summary).map(([key, value], index) => {
                 const hasBox = session.bounding_boxes?.[key];
                 const citation = session.citations?.[key];
-                
+
                 return (
                   <div
                     key={key}
@@ -246,7 +225,7 @@ export default function SessionDetail() {
                   </div>
                 );
               })}
-              
+
               {Object.keys(session.summary).length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
                   No extracted fields available
