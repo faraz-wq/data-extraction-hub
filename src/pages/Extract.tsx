@@ -93,69 +93,45 @@ export default function Extract() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">Extract</h1>
-          <p className="text-muted-foreground mt-1">
-            Upload documents and extract structured data using your schemas
-          </p>
-        </div>
+      <div className="h-full flex flex-col gap-2">
+        {/* Slim Top Bar - Upload Form */}
+        <UploadForm
+          schemas={schemas}
+          isLoadingSchemas={isLoadingSchemas}
+          onExtract={handleExtract}
+          isExtracting={isExtracting}
+        />
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Upload Form */}
-          <div className="lg:col-span-1">
-            <UploadForm
-              schemas={schemas}
-              isLoadingSchemas={isLoadingSchemas}
-              onExtract={handleExtract}
-              isExtracting={isExtracting}
-            />
-          </div>
-
-          {/* Right Column - Results & Preview */}
-          <div className="lg:col-span-2 space-y-6">
-            {extractionResult ? (
-              <>
-                <ResultsView
-                  result={extractionResult}
-                  onFieldHover={handleFieldHover}
-                  highlightedField={highlightedField}
-                />
-                <PDFViewerWithBoxes
-                  file={uploadedFile}
-                  boundingBoxes={extractionResult.bounding_boxes}
-                  highlightedField={highlightedField}
-                  onFieldClick={handleFieldClick}
-                />
-              </>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-[500px] rounded-xl border border-dashed border-border">
-                {isExtracting ? (
-                  <div className="text-center">
-                    <div className="w-8 h-8 mx-auto mb-4 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" />
-                    <h3 className="text-base font-medium text-foreground mb-2">
-                      Processing Documents
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Extracting data using AI...
-                    </p>
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <h3 className="text-base font-medium text-foreground mb-2">
-                      No Extraction Results
-                    </h3>
-                    <p className="text-sm text-muted-foreground max-w-md">
-                      Upload documents and select a schema to extract structured data.
-                      Results will appear here.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+        {/* Main Content - Results Left, PDF Right */}
+        <div className="flex-1 min-h-0">
+          {extractionResult ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 h-full">
+              <ResultsView
+                result={extractionResult}
+                onFieldHover={handleFieldHover}
+                highlightedField={highlightedField}
+              />
+              <PDFViewerWithBoxes
+                file={uploadedFile}
+                boundingBoxes={extractionResult.bounding_boxes}
+                highlightedField={highlightedField}
+                onFieldClick={handleFieldClick}
+              />
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-full border border-dashed border-border rounded">
+              {isExtracting ? (
+                <div className="text-center">
+                  <div className="w-6 h-6 mx-auto mb-2 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" />
+                  <p className="text-sm text-foreground">Processing...</p>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Upload documents to extract data
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </DashboardLayout>

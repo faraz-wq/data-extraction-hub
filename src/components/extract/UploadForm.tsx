@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
@@ -67,129 +66,80 @@ export function UploadForm({ schemas, isLoadingSchemas, onExtract, isExtracting 
     await onExtract(id, type, selectedFiles);
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
-  const selectedSchema = schemas.find(s => `schema:${s.schema_id}` === selectedValue);
-
   return (
-    <Card className="h-fit">
-      <CardHeader>
-        <CardTitle className="text-base">Upload Documents</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Type Selector */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Document Type</label>
-          <Select value={selectedValue} onValueChange={setSelectedValue} disabled={isLoadingSchemas}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select document type..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Standard Applications</SelectLabel>
-                {APPLICATION_TYPES.map(type => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-              <SelectGroup>
-                <SelectLabel>Custom Schemas</SelectLabel>
-                {schemas.map(schema => (
-                  <SelectItem key={schema.schema_id} value={`schema:${schema.schema_id}`}>
-                    {schema.schema_name}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          {selectedSchema && (
-            <p className="text-xs text-muted-foreground">
-              {selectedSchema.description}
-            </p>
-          )}
+    <div
+      className={cn(
+        'flex items-center gap-3 p-2 border-b border-border',
+        isDragging && 'bg-secondary'
+      )}
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+    >
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept=".pdf,image/*"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+
+      <Select value={selectedValue} onValueChange={setSelectedValue} disabled={isLoadingSchemas}>
+        <SelectTrigger className="w-48 h-8 text-xs">
+          <SelectValue placeholder="Select type..." />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            <SelectLabel>Applications</SelectLabel>
+            {APPLICATION_TYPES.map(type => (
+              <SelectItem key={type} value={type} className="text-xs">
+                {type}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+          <SelectGroup>
+            <SelectLabel>Schemas</SelectLabel>
+            {schemas.map(schema => (
+              <SelectItem key={schema.schema_id} value={`schema:${schema.schema_id}`} className="text-xs">
+                {schema.schema_name}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-8 text-xs"
+        onClick={() => fileInputRef.current?.click()}
+      >
+        {selectedFiles.length > 0 ? `${selectedFiles.length} file(s)` : 'Add files'}
+      </Button>
+
+      {selectedFiles.length > 0 && (
+        <div className="flex items-center gap-1 overflow-x-auto max-w-md">
+          {selectedFiles.map((file, index) => (
+            <span
+              key={`${file.name}-${index}`}
+              className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded whitespace-nowrap cursor-pointer hover:line-through"
+              onClick={() => removeFile(index)}
+            >
+              {file.name.length > 20 ? file.name.slice(0, 17) + '...' : file.name}
+            </span>
+          ))}
         </div>
+      )}
 
-        {/* Drop Zone */}
-        <div
-          className={cn(
-            'relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200',
-            isDragging
-              ? 'border-foreground bg-secondary'
-              : 'border-border hover:border-foreground/50',
-            'cursor-pointer'
-          )}
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept=".pdf,image/*"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-          <p className="text-sm font-medium text-foreground mb-1">
-            Drop files here or click to browse
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Supports PDF and image files
-          </p>
-        </div>
-
-        {/* Selected Files */}
-        {selectedFiles.length > 0 && (
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">
-              Selected Files ({selectedFiles.length})
-            </label>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {selectedFiles.map((file, index) => (
-                <div
-                  key={`${file.name}-${index}`}
-                  className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg group"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {file.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatFileSize(file.size)}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeFile(index);
-                    }}
-                  >
-                    Remove
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Submit Button */}
-        <Button
-          className="w-full"
-          disabled={!selectedValue || selectedFiles.length === 0 || isExtracting}
-          onClick={handleSubmit}
-        >
-          {isExtracting ? 'Extracting...' : 'Extract Data'}
-        </Button>
-      </CardContent>
-    </Card>
+      <Button
+        size="sm"
+        className="h-8 text-xs ml-auto"
+        disabled={!selectedValue || selectedFiles.length === 0 || isExtracting}
+        onClick={handleSubmit}
+      >
+        {isExtracting ? 'Extracting...' : 'Extract'}
+      </Button>
+    </div>
   );
 }

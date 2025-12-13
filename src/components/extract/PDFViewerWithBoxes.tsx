@@ -1,13 +1,11 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BoundingBox } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
-// Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface PDFViewerWithBoxesProps {
@@ -44,7 +42,6 @@ export function PDFViewerWithBoxes({
   const goToNextPage = () => setPageNumber(prev => Math.min(numPages, prev + 1));
   const zoomIn = () => setScale(prev => Math.min(2, prev + 0.25));
   const zoomOut = () => setScale(prev => Math.max(0.5, prev - 0.25));
-  const resetZoom = () => setScale(1.0);
 
   const PADDING_X = 12;
   const PADDING_Y = 6;
@@ -104,129 +101,106 @@ export function PDFViewerWithBoxes({
 
   if (!file) {
     return (
-      <Card className="h-full flex items-center justify-center min-h-[400px]">
-        <div className="text-center text-muted-foreground">
-          <p className="text-sm">No document selected</p>
-          <p className="text-xs mt-1">Upload a document to view it here</p>
-        </div>
-      </Card>
+      <div className="h-full flex items-center justify-center border border-border rounded">
+        <p className="text-xs text-muted-foreground">No document</p>
+      </div>
     );
   }
 
   return (
-    <Card className="h-full max-h-[800px] flex flex-col">
-      <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
-        <CardTitle className="text-base">Document Preview</CardTitle>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={zoomOut}>−</Button>
-          <span className="text-xs text-muted-foreground w-12 text-center">
-            {Math.round(scale * 100)}%
-          </span>
-          <Button variant="ghost" size="sm" onClick={zoomIn}>+</Button>
-          <Button variant="ghost" size="sm" onClick={resetZoom}>Reset</Button>
+    <div className="h-full flex flex-col border border-border rounded overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-2 py-1 border-b border-border text-xs">
+        <span className="text-muted-foreground">Preview</span>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={zoomOut}>−</Button>
+          <span className="text-muted-foreground w-10 text-center">{Math.round(scale * 100)}%</span>
+          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={zoomIn}>+</Button>
         </div>
-      </CardHeader>
-      <CardContent className="flex-1 overflow-hidden flex flex-col p-4">
-        {/* PDF Container */}
-        <div
-          ref={containerRef}
-          className="flex-1 overflow-auto bg-secondary/30 rounded-lg flex items-start justify-center p-4"
-        >
-          <div className="relative inline-block">
-            <Document
-              file={file}
-              onLoadSuccess={onDocumentLoadSuccess}
-              loading={
-                <div className="flex items-center justify-center h-64">
-                  <div className="w-8 h-8 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" />
+      </div>
+
+      {/* PDF Container */}
+      <div ref={containerRef} className="flex-1 overflow-auto bg-secondary/20 flex items-start justify-center p-2">
+        <div className="relative inline-block">
+          <Document
+            file={file}
+            onLoadSuccess={onDocumentLoadSuccess}
+            loading={
+              <div className="flex items-center justify-center h-48">
+                <div className="w-5 h-5 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" />
+              </div>
+            }
+            error={
+              <div className="flex items-center justify-center h-48 text-destructive">
+                <p className="text-xs">Failed to load</p>
+              </div>
+            }
+          >
+            <Page
+              pageNumber={pageNumber}
+              scale={scale}
+              onLoadSuccess={onPageLoadSuccess}
+              renderTextLayer={true}
+              renderAnnotationLayer={true}
+            />
+          </Document>
+
+          {/* Bounding Box Overlays - Blue default, Purple highlighted */}
+          {currentPageBoxes.map((box) => {
+            const isHighlighted = highlightedField === box.field;
+            const globalIndex = boxes.findIndex(b => b.field === box.field);
+            const fieldNumber = globalIndex + 1;
+
+            return (
+              <div
+                key={`${box.field}-${box.index}`}
+                className={cn(
+                  'absolute border-2 transition-all duration-200 cursor-pointer rounded-sm',
+                  isHighlighted
+                    ? 'border-purple-500 bg-purple-500/20 z-20'
+                    : 'border-blue-500 bg-blue-500/10 hover:bg-blue-500/20 z-10'
+                )}
+                style={{
+                  left: `${box.x * scale}px`,
+                  top: `${box.y * scale}px`,
+                  width: `${box.width * scale}px`,
+                  height: `${box.height * scale}px`,
+                }}
+                onClick={() => onFieldClick?.(box.field)}
+                title={`${fieldNumber}. ${box.field}`}
+              >
+                <div className={cn(
+                  'absolute -top-2 -left-2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium',
+                  isHighlighted
+                    ? 'bg-purple-500 text-white'
+                    : 'bg-blue-500 text-white'
+                )}>
+                  {fieldNumber}
                 </div>
-              }
-              error={
-                <div className="flex items-center justify-center h-64 text-destructive">
-                  <p className="text-sm">Failed to load document</p>
-                </div>
-              }
-            >
-              <Page
-                pageNumber={pageNumber}
-                scale={scale}
-                onLoadSuccess={onPageLoadSuccess}
-                renderTextLayer={true}
-                renderAnnotationLayer={true}
-              />
-            </Document>
 
-            {/* Bounding Box Overlays */}
-            {currentPageBoxes.map((box) => {
-              const isHighlighted = highlightedField === box.field;
-              const globalIndex = boxes.findIndex(b => b.field === box.field);
-              const fieldNumber = globalIndex + 1;
-
-              return (
-                <div
-                  key={`${box.field}-${box.index}`}
-                  className={cn(
-                    'absolute border-2 transition-all duration-200 cursor-pointer rounded-sm',
-                    isHighlighted
-                      ? 'border-foreground bg-foreground/20 z-20'
-                      : 'border-muted-foreground/50 bg-muted/10 hover:border-foreground hover:bg-foreground/10 z-10'
-                  )}
-                  style={{
-                    left: `${box.x * scale}px`,
-                    top: `${box.y * scale}px`,
-                    width: `${box.width * scale}px`,
-                    height: `${box.height * scale}px`,
-                  }}
-                  onClick={() => onFieldClick?.(box.field)}
-                  title={`${fieldNumber}. ${box.field}`}
-                >
-                  {/* Field Number Badge */}
-                  <div className={cn(
-                    'absolute -top-3 -left-3 w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium',
-                    isHighlighted
-                      ? 'bg-foreground text-background'
-                      : 'bg-muted text-muted-foreground'
-                  )}>
-                    {fieldNumber}
-                  </div>
-
-                  {isHighlighted && (
-                    <span className="absolute -top-8 left-4 px-2 py-1 bg-foreground text-background text-xs rounded whitespace-nowrap z-30">
-                      {box.field.replace(/_/g, ' ')}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-
-          </div>
+                {isHighlighted && (
+                  <span className="absolute -top-6 left-3 px-1 py-0.5 bg-purple-500 text-white text-[10px] rounded whitespace-nowrap z-30">
+                    {box.field.replace(/_/g, ' ')}
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
+      </div>
 
-        {/* Pagination */}
-        {numPages > 0 && (
-          <div className="flex items-center justify-center gap-4 pt-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={goToPrevPage}
-              disabled={pageNumber <= 1}
-            >
-              ← Prev
-            </Button>
-            <span className="text-sm text-muted-foreground">
-              Page {pageNumber} of {numPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={goToNextPage}
-              disabled={pageNumber >= numPages}
-            >
-              Next →
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      {/* Pagination */}
+      {numPages > 1 && (
+        <div className="flex items-center justify-center gap-2 px-2 py-1 border-t border-border text-xs">
+          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={goToPrevPage} disabled={pageNumber <= 1}>
+            Prev
+          </Button>
+          <span className="text-muted-foreground">{pageNumber}/{numPages}</span>
+          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={goToNextPage} disabled={pageNumber >= numPages}>
+            Next
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }
