@@ -35,6 +35,39 @@ export function ResultsView({ result, onFieldHover, highlightedField }: ResultsV
     return String(value);
   };
 
+  const renderDisplayValue = (value: unknown): React.ReactNode => {
+    if (value === null || value === undefined) return '—';
+
+    if (Array.isArray(value)) {
+      if (value.length === 0) return <span className="text-muted-foreground italic">Empty list</span>;
+      return (
+        <div className="flex flex-col gap-2 mt-1">
+          {value.map((item, idx) => (
+            <div key={idx} className="pl-2 border-l-2 border-border/50">
+              {renderDisplayValue(item)}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (typeof value === 'object') {
+      if (Object.keys(value).length === 0) return <span className="text-muted-foreground italic">Empty object</span>;
+      return (
+        <div className="flex flex-col gap-1 mt-1">
+          {Object.entries(value).map(([k, v]) => (
+            <div key={k} className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-xs">
+              <span className="text-muted-foreground font-medium capitalize">{k.replace(/_/g, ' ')}:</span>
+              <div className="text-foreground">{renderDisplayValue(v)}</div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return String(value);
+  };
+
   const handleFeedback = async (field: string, type: 'upvote' | 'downvote', text?: string) => {
     setLoadingFeedback(prev => ({ ...prev, [field]: true }));
     try {
@@ -87,101 +120,95 @@ export function ResultsView({ result, onFieldHover, highlightedField }: ResultsV
                 onMouseEnter={() => onFieldHover?.(key)}
                 onMouseLeave={() => onFieldHover?.(null)}
               >
-                <div className={cn(
-                  'absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium',
-                  isHighlighted
-                    ? 'bg-purple-500 text-white'
-                    : 'bg-blue-500 text-white'
-                )}>
-                  {fieldNumber}
-                </div>
-
-                <div className="flex items-start justify-between gap-1 ml-3">
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                    {key.replace(/_/g, ' ')}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-5 px-1 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        copyToClipboard(renderValue(value));
-                      }}
-                    >
-                      Copy
-                    </Button>
-                  </div>
-                </div>
-                <p className="text-xs text-foreground whitespace-pre-wrap ml-3 mt-0.5">
-                  {renderValue(value)}
-                </p>
-                {citation && (
-                  <p className="text-[10px] text-muted-foreground mt-1 italic ml-3">
-                    {citation}
-                  </p>
-                )}
-
-                {/* Feedback Controls */}
-                <div className="flex items-center gap-1 ml-3 mt-2 border-t border-border/50 pt-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn("h-6 w-6", currentFeedback?.type === 'upvote' ? "text-green-500" : "text-muted-foreground hover:text-green-500")}
-                    disabled={isLoading}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleFeedback(key, 'upvote');
-                    }}
-                  >
-                    <ThumbsUp className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn("h-6 w-6", currentFeedback?.type === 'downvote' ? "text-red-500" : "text-muted-foreground hover:text-red-500")}
-                    disabled={isLoading}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleFeedback(key, 'downvote');
-                    }}
-                  >
-                    <ThumbsDown className="h-3 w-3" />
-                  </Button>
-
-                  <Popover>
-                    <PopoverTrigger asChild>
+                <div className="flex items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                        {key.replace(/_/g, ' ')}
+                      </span>
                       <Button
                         variant="ghost"
-                        size="icon"
-                        className={cn("h-6 w-6", currentFeedback?.text ? "text-blue-500" : "text-muted-foreground hover:text-blue-500")}
-                        onClick={(e) => e.stopPropagation()}
+                        size="sm"
+                        className="h-4 px-1 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          copyToClipboard(renderValue(value));
+                        }}
                       >
-                        <MessageSquare className="h-3 w-3" />
+                        Copy
                       </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-64 p-2" align="start">
-                      <div className="space-y-2">
-                        <h4 className="font-medium text-xs">Feedback for {key}</h4>
-                        <Textarea
-                          placeholder="Add your comments here..."
-                          className="h-20 text-xs resize-none"
-                          value={feedbackText[key] || ''}
-                          onChange={(e) => setFeedbackText(prev => ({ ...prev, [key]: e.target.value }))}
-                        />
+                    </div>
+
+                    <div className="text-xs text-foreground">
+                      {renderDisplayValue(value)}
+                    </div>
+
+                    {citation && (
+                      <p className="text-[10px] text-muted-foreground mt-1 italic">
+                        {citation}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn("h-6 w-6", currentFeedback?.type === 'upvote' ? "text-green-500" : "text-muted-foreground hover:text-green-500")}
+                      disabled={isLoading}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleFeedback(key, 'upvote');
+                      }}
+                    >
+                      <ThumbsUp className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn("h-6 w-6", currentFeedback?.type === 'downvote' ? "text-red-500" : "text-muted-foreground hover:text-red-500")}
+                      disabled={isLoading}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleFeedback(key, 'downvote');
+                      }}
+                    >
+                      <ThumbsDown className="h-3 w-3" />
+                    </Button>
+
+                    <Popover>
+                      <PopoverTrigger asChild>
                         <Button
-                          size="sm"
-                          className="w-full h-7 text-xs"
-                          onClick={() => {
-                            handleFeedback(key, currentFeedback?.type || 'downvote', feedbackText[key]);
-                          }}
+                          variant="ghost"
+                          size="icon"
+                          className={cn("h-6 w-6", currentFeedback?.text ? "text-blue-500" : "text-muted-foreground hover:text-blue-500")}
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          Submit Feedback
+                          <MessageSquare className="h-3 w-3" />
                         </Button>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-64 p-2" align="end">
+                        <div className="space-y-2">
+                          <h4 className="font-medium text-xs">Feedback for {key}</h4>
+                          <Textarea
+                            placeholder="Add your comments here..."
+                            className="h-20 text-xs resize-none"
+                            value={feedbackText[key] || ''}
+                            onChange={(e) => setFeedbackText(prev => ({ ...prev, [key]: e.target.value }))}
+                          />
+                          <Button
+                            size="sm"
+                            className="w-full h-7 text-xs"
+                            onClick={() => {
+                              handleFeedback(key, currentFeedback?.type || 'downvote', feedbackText[key]);
+                            }}
+                          >
+                            Submit Feedback
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 </div>
               </div>
             );

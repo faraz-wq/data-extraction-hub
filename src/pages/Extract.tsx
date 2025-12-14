@@ -93,7 +93,7 @@ export default function Extract() {
 
   return (
     <DashboardLayout>
-      <div className="h-full flex flex-col gap-2">
+      <div className="h-[calc(100vh-4rem)] flex flex-col gap-2">
         {/* Slim Top Bar - Upload Form */}
         <UploadForm
           schemas={schemas}
@@ -105,7 +105,7 @@ export default function Extract() {
         {/* Main Content - Results Left, PDF Right */}
         <div className="flex-1 min-h-0">
           {extractionResult ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 h-full">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_600px] gap-4 h-full">
               <ResultsView
                 result={extractionResult}
                 onFieldHover={handleFieldHover}

@@ -169,14 +169,7 @@ export function PDFViewerWithBoxes({
                 onClick={() => onFieldClick?.(box.field)}
                 title={`${fieldNumber}. ${box.field}`}
               >
-                <div className={cn(
-                  'absolute -top-2 -left-2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium',
-                  isHighlighted
-                    ? 'bg-purple-500 text-white'
-                    : 'bg-blue-500 text-white'
-                )}>
-                  {fieldNumber}
-                </div>
+
 
                 {isHighlighted && (
                   <span className="absolute -top-6 left-3 px-1 py-0.5 bg-purple-500 text-white text-[10px] rounded whitespace-nowrap z-30">
