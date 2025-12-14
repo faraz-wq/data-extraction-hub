@@ -379,6 +379,18 @@ class ApiClient {
       documents: [],
     };
   }
+
+  async submitFeedback(sessionId: string, fieldName: string, type: 'upvote' | 'downvote', text?: string): Promise<void> {
+    await this.request('/feedback', {
+      method: 'POST',
+      body: JSON.stringify({
+        session_id: sessionId,
+        field_name: fieldName,
+        feedback_type: type,
+        feedback_text: text
+      }),
+    });
+  }
 }
 
 export const api = new ApiClient();
