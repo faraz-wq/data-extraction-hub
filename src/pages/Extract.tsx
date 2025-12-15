@@ -105,10 +105,11 @@ export default function Extract() {
         {/* Main Content - Results Left, PDF Right */}
         <div className="flex-1 min-h-0">
           {extractionResult ? (
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_600px] gap-4 h-full">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
               <ResultsView
                 result={extractionResult}
                 onFieldHover={handleFieldHover}
+                onFieldClick={handleFieldClick}
                 highlightedField={highlightedField}
               />
               <PDFViewerWithBoxes

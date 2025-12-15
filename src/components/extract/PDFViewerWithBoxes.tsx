@@ -88,7 +88,7 @@ export function PDFViewerWithBoxes({
     });
   }, [boundingBoxes, pageWidth, pageHeight]);
 
-  const currentPageBoxes = boxes.filter(box => box.page === pageNumber);
+  const currentPageBoxes = boxes.filter(box => box.page === pageNumber && box.field === highlightedField);
 
   useEffect(() => {
     if (highlightedField) {
@@ -97,7 +97,9 @@ export function PDFViewerWithBoxes({
         setPageNumber(box.page);
       }
     }
-  }, [highlightedField, boxes, pageNumber]);
+    // Only trigger when highlightedField changes, NOT when pageNumber changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightedField]);
 
   if (!file) {
     return (

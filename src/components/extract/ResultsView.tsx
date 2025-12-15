@@ -12,13 +12,15 @@ import { Textarea } from '@/components/ui/textarea';
 interface ResultsViewProps {
   result: SessionDetail;
   onFieldHover?: (field: string | null) => void;
+  onFieldClick?: (field: string) => void;
   highlightedField?: string | null;
 }
 
-export function ResultsView({ result, onFieldHover, highlightedField }: ResultsViewProps) {
+export function ResultsView({ result, onFieldHover, onFieldClick, highlightedField }: ResultsViewProps) {
   const [feedbackState, setFeedbackState] = useState<Record<string, { type: 'upvote' | 'downvote', text?: string }>>({});
   const [loadingFeedback, setLoadingFeedback] = useState<Record<string, boolean>>({});
   const [feedbackText, setFeedbackText] = useState<Record<string, string>>({});
+  const [activeFeedbackField, setActiveFeedbackField] = useState<string | null>(null);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -26,6 +28,27 @@ export function ResultsView({ result, onFieldHover, highlightedField }: ResultsV
   };
 
   const getCitationForField = (fieldName: string): string | undefined => {
+    const boxes = result.bounding_boxes?.[fieldName];
+    if (boxes && boxes.length > 0) {
+      const uniqueLocations = Array.from(new Set(boxes.map(b => {
+        let titlePrefix = '';
+        const sourceDocs = result.summary?.['source_documents'];
+
+        if (Array.isArray(sourceDocs)) {
+          const titles = sourceDocs
+            .filter((d: any) => d?.filename === b.filename && d?.document_title)
+            .map((d: any) => d.document_title);
+
+          const uniqueTitles = Array.from(new Set(titles));
+          if (uniqueTitles.length > 0) {
+            titlePrefix = uniqueTitles.join(', ') + ' • ';
+          }
+        }
+
+        return `${titlePrefix}${b.filename} (Page ${b.page})`;
+      })));
+      return uniqueLocations.join(', ');
+    }
     return result.citations?.[fieldName];
   };
 
@@ -70,6 +93,15 @@ export function ResultsView({ result, onFieldHover, highlightedField }: ResultsV
 
   const handleFeedback = async (field: string, type: 'upvote' | 'downvote', text?: string) => {
     setLoadingFeedback(prev => ({ ...prev, [field]: true }));
+
+    // If this is a new vote (no text), open the feedback box
+    if (!text) {
+      setActiveFeedbackField(field);
+    } else {
+      // If submitting text, close the box
+      setActiveFeedbackField(null);
+    }
+
     try {
       await api.submitFeedback(result.session_id, field, type, text);
 
@@ -117,8 +149,7 @@ export function ResultsView({ result, onFieldHover, highlightedField }: ResultsV
                     ? 'border-purple-500 bg-purple-500/10'
                     : 'border-border hover:border-blue-500'
                 )}
-                onMouseEnter={() => onFieldHover?.(key)}
-                onMouseLeave={() => onFieldHover?.(null)}
+                onClick={() => onFieldClick?.(key)}
               >
                 <div className="flex items-start gap-3">
                   <div className="flex-1 min-w-0">
@@ -150,65 +181,74 @@ export function ResultsView({ result, onFieldHover, highlightedField }: ResultsV
                     )}
                   </div>
 
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={cn("h-6 w-6", currentFeedback?.type === 'upvote' ? "text-green-500" : "text-muted-foreground hover:text-green-500")}
-                      disabled={isLoading}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleFeedback(key, 'upvote');
-                      }}
-                    >
-                      <ThumbsUp className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={cn("h-6 w-6", currentFeedback?.type === 'downvote' ? "text-red-500" : "text-muted-foreground hover:text-red-500")}
-                      disabled={isLoading}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleFeedback(key, 'downvote');
-                      }}
-                    >
-                      <ThumbsDown className="h-3 w-3" />
-                    </Button>
-
-                    <Popover>
-                      <PopoverTrigger asChild>
+                  <Popover
+                    open={activeFeedbackField === key}
+                    onOpenChange={(open) => {
+                      if (!open) setActiveFeedbackField(null);
+                    }}
+                  >
+                    <PopoverTrigger asChild>
+                      <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className={cn("h-6 w-6", currentFeedback?.text ? "text-blue-500" : "text-muted-foreground hover:text-blue-500")}
-                          onClick={(e) => e.stopPropagation()}
+                          className={cn("h-6 w-6", currentFeedback?.type === 'upvote' ? "text-green-500" : "text-muted-foreground hover:text-green-500")}
+                          disabled={isLoading}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleFeedback(key, 'upvote');
+                          }}
                         >
-                          <MessageSquare className="h-3 w-3" />
+                          <ThumbsUp className="h-3 w-3" />
                         </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-64 p-2" align="end">
-                        <div className="space-y-2">
-                          <h4 className="font-medium text-xs">Feedback for {key}</h4>
-                          <Textarea
-                            placeholder="Add your comments here..."
-                            className="h-20 text-xs resize-none"
-                            value={feedbackText[key] || ''}
-                            onChange={(e) => setFeedbackText(prev => ({ ...prev, [key]: e.target.value }))}
-                          />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={cn("h-6 w-6", currentFeedback?.type === 'downvote' ? "text-red-500" : "text-muted-foreground hover:text-red-500")}
+                          disabled={isLoading}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleFeedback(key, 'downvote');
+                          }}
+                        >
+                          <ThumbsDown className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-3" align="end" side="left">
+                      <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium text-xs">Feedback</h4>
+                          <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">Optional</span>
+                        </div>
+                        <Textarea
+                          placeholder="Tell us more about this result..."
+                          className="h-20 text-xs resize-none"
+                          value={feedbackText[key] || ''}
+                          onChange={(e) => setFeedbackText(prev => ({ ...prev, [key]: e.target.value }))}
+                        />
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => setActiveFeedbackField(null)}
+                          >
+                            Skip
+                          </Button>
                           <Button
                             size="sm"
-                            className="w-full h-7 text-xs"
+                            className="h-7 text-xs"
                             onClick={() => {
-                              handleFeedback(key, currentFeedback?.type || 'downvote', feedbackText[key]);
+                              handleFeedback(key, currentFeedback?.type || 'upvote', feedbackText[key]);
                             }}
                           >
-                            Submit Feedback
+                            Submit
                           </Button>
                         </div>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
             );
