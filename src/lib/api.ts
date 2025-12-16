@@ -43,12 +43,15 @@ interface SessionDetail extends Session {
   bounding_boxes: Record<string, BoundingBox[]>;
   citations: Record<string, string>;
   documents: Document[];
+  source_documents?: Array<{ filename: string; document_title: string }>;
+  errors?: any[];
 }
 
 interface BoundingBox {
   filename: string;
   page: number;
   coordinates: number[];
+  document_title?: string;
 }
 
 
@@ -366,7 +369,16 @@ class ApiClient {
     const data = await response.json();
 
     // Transform flat response to SessionDetail format
-    const { session_id, bounding_boxes, citations, annotated_files, _token_usage, ...summaryFields } = data;
+    const {
+      session_id,
+      bounding_boxes,
+      citations,
+      annotated_files,
+      _token_usage,
+      source_documents,
+      _errors,
+      ...summaryFields
+    } = data;
 
     return {
       session_id: session_id || 'temp-' + Date.now(),
@@ -377,6 +389,8 @@ class ApiClient {
       bounding_boxes: bounding_boxes || {},
       citations: citations || {},
       documents: [],
+      source_documents: source_documents || [],
+      errors: _errors || [],
     };
   }
 

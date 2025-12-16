@@ -12,7 +12,13 @@ export default function Extract() {
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionResult, setExtractionResult] = useState<SessionDetail | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [highlightedField, setHighlightedField] = useState<string | null>(null);
+
+  // Separate state for hover and selection
+  const [hoveredField, setHoveredField] = useState<string | null>(null);
+  const [selectedField, setSelectedField] = useState<string | null>(null);
+
+  // Derived state: hover takes precedence for preview, but selection persists
+  const activeField = hoveredField || selectedField;
 
   useEffect(() => {
     const fetchSchemas = async () => {
@@ -38,6 +44,8 @@ export default function Extract() {
     setIsExtracting(true);
     setExtractionResult(null);
     setUploadedFile(files[0] || null);
+    setSelectedField(null);
+    setHoveredField(null);
 
     try {
       let result;
@@ -84,11 +92,11 @@ export default function Extract() {
   };
 
   const handleFieldHover = (field: string | null) => {
-    setHighlightedField(field);
+    setHoveredField(field);
   };
 
   const handleFieldClick = (field: string) => {
-    setHighlightedField(field);
+    setSelectedField(field);
   };
 
   return (
@@ -110,12 +118,12 @@ export default function Extract() {
                 result={extractionResult}
                 onFieldHover={handleFieldHover}
                 onFieldClick={handleFieldClick}
-                highlightedField={highlightedField}
+                highlightedField={activeField}
               />
               <PDFViewerWithBoxes
                 file={uploadedFile}
                 boundingBoxes={extractionResult.bounding_boxes}
-                highlightedField={highlightedField}
+                highlightedField={activeField}
                 onFieldClick={handleFieldClick}
               />
             </div>

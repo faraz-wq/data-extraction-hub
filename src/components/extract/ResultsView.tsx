@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { api, SessionDetail } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import { ThumbsUp, ThumbsDown, MessageSquare, Check } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, AlertCircle } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -16,11 +16,44 @@ interface ResultsViewProps {
   highlightedField?: string | null;
 }
 
+function flattenObject(obj: any, prefix = '', res: Record<string, any> = {}) {
+  for (const key in obj) {
+    const value = obj[key];
+    const newKey = prefix ? `${prefix}.${key}` : key;
+
+    if (value && typeof value === 'object') {
+      if (Array.isArray(value)) {
+        if (value.length === 0) {
+          res[newKey] = [];
+        } else {
+          value.forEach((item, index) => {
+            const arrayKey = `${newKey}[${index}]`;
+            if (item && typeof item === 'object') {
+              flattenObject(item, arrayKey, res);
+            } else {
+              res[arrayKey] = item;
+            }
+          });
+        }
+      } else {
+        flattenObject(value, newKey, res);
+      }
+    } else {
+      res[newKey] = value;
+    }
+  }
+  return res;
+}
+
 export function ResultsView({ result, onFieldHover, onFieldClick, highlightedField }: ResultsViewProps) {
   const [feedbackState, setFeedbackState] = useState<Record<string, { type: 'upvote' | 'downvote', text?: string }>>({});
   const [loadingFeedback, setLoadingFeedback] = useState<Record<string, boolean>>({});
   const [feedbackText, setFeedbackText] = useState<Record<string, string>>({});
   const [activeFeedbackField, setActiveFeedbackField] = useState<string | null>(null);
+
+  const flattenedSummary = useMemo(() => {
+    return flattenObject(result.summary || {});
+  }, [result.summary]);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -31,8 +64,14 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
     const boxes = result.bounding_boxes?.[fieldName];
     if (boxes && boxes.length > 0) {
       const uniqueLocations = Array.from(new Set(boxes.map(b => {
+        // Prefer explicit document title from bounding box if available
+        if (b.document_title) {
+          return `${b.document_title} (Page ${b.page})`;
+        }
+
         let titlePrefix = '';
-        const sourceDocs = result.summary?.['source_documents'];
+        // Use source_documents from result, or fall back to documents
+        const sourceDocs = result.source_documents || result.documents;
 
         if (Array.isArray(sourceDocs)) {
           const titles = sourceDocs
@@ -58,47 +97,12 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
     return String(value);
   };
 
-  const renderDisplayValue = (value: unknown): React.ReactNode => {
-    if (value === null || value === undefined) return '—';
-
-    if (Array.isArray(value)) {
-      if (value.length === 0) return <span className="text-muted-foreground italic">Empty list</span>;
-      return (
-        <div className="flex flex-col gap-2 mt-1">
-          {value.map((item, idx) => (
-            <div key={idx} className="pl-2 border-l-2 border-border/50">
-              {renderDisplayValue(item)}
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    if (typeof value === 'object') {
-      if (Object.keys(value).length === 0) return <span className="text-muted-foreground italic">Empty object</span>;
-      return (
-        <div className="flex flex-col gap-1 mt-1">
-          {Object.entries(value).map(([k, v]) => (
-            <div key={k} className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-xs">
-              <span className="text-muted-foreground font-medium capitalize">{k.replace(/_/g, ' ')}:</span>
-              <div className="text-foreground">{renderDisplayValue(v)}</div>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    return String(value);
-  };
-
   const handleFeedback = async (field: string, type: 'upvote' | 'downvote', text?: string) => {
     setLoadingFeedback(prev => ({ ...prev, [field]: true }));
 
-    // If this is a new vote (no text), open the feedback box
     if (!text) {
       setActiveFeedbackField(field);
     } else {
-      // If submitting text, close the box
       setActiveFeedbackField(null);
     }
 
@@ -121,7 +125,7 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
   return (
     <div className="h-full flex flex-col border border-border rounded overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-2 py-1 border-b border-border">
+      <div className="flex items-center justify-between px-2 py-1 border-b border-border bg-muted/30">
         <span className="text-xs text-muted-foreground font-mono truncate max-w-[200px]">
           {result.session_id}
         </span>
@@ -130,13 +134,27 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
         </Button>
       </div>
 
+      {/* Errors Section */}
+      {result.errors && result.errors.length > 0 && (
+        <div className="p-3 bg-red-500/10 border-b border-red-500/20">
+          <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-xs font-medium mb-1">
+            <AlertCircle className="w-4 h-4" />
+            Extraction Issues
+          </div>
+          <ul className="list-disc list-inside text-[10px] text-red-600/80 dark:text-red-400/80 space-y-0.5">
+            {result.errors.map((err: any, i: number) => (
+              <li key={i}>{typeof err === 'string' ? err : JSON.stringify(err)}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Fields */}
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-1">
-          {Object.entries(result.summary || {}).map(([key, value], index) => {
+          {Object.entries(flattenedSummary).map(([key, value], index) => {
             const citation = getCitationForField(key);
             const isHighlighted = highlightedField === key;
-            const fieldNumber = index + 1;
             const currentFeedback = feedbackState[key];
             const isLoading = loadingFeedback[key];
 
@@ -150,12 +168,14 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
                     : 'border-border hover:border-blue-500'
                 )}
                 onClick={() => onFieldClick?.(key)}
+                onMouseEnter={() => onFieldHover?.(key)}
+                onMouseLeave={() => onFieldHover?.(null)}
               >
                 <div className="flex items-start gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                        {key.replace(/_/g, ' ')}
+                      <span className="text-[10px] text-muted-foreground font-mono tracking-tight break-all">
+                        {key}
                       </span>
                       <Button
                         variant="ghost"
@@ -170,8 +190,8 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
                       </Button>
                     </div>
 
-                    <div className="text-xs text-foreground">
-                      {renderDisplayValue(value)}
+                    <div className="text-sm font-medium text-foreground break-words">
+                      {renderValue(value)}
                     </div>
 
                     {citation && (
@@ -188,7 +208,7 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
                     }}
                   >
                     <PopoverTrigger asChild>
-                      <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -257,9 +277,11 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
       </ScrollArea>
 
       {/* Footer */}
-      <div className="px-2 py-1 border-t border-border text-[10px] text-muted-foreground">
-        {Object.keys(result.summary || {}).length} fields
-        {result.documents && ` · ${result.documents.length} docs`}
+      <div className="px-2 py-1 border-t border-border text-[10px] text-muted-foreground flex justify-between">
+        <span>{Object.keys(flattenedSummary).length} fields</span>
+        <span>
+          {result.source_documents ? result.source_documents.length : result.documents?.length || 0} docs
+        </span>
       </div>
     </div>
   );
