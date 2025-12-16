@@ -43,8 +43,7 @@ export function PDFViewerWithBoxes({
   const zoomIn = () => setScale(prev => Math.min(2, prev + 0.25));
   const zoomOut = () => setScale(prev => Math.max(0.5, prev - 0.25));
 
-  const PADDING_X = 12;
-  const PADDING_Y = 6;
+  const PADDING = 2;
 
   const boxes = useMemo(() => {
     if (!pageWidth || !pageHeight) return [];
@@ -70,10 +69,11 @@ export function PDFViewerWithBoxes({
           height = (y_max - y_min) * pageHeight;
         }
 
-        const paddedX = Math.max(0, x - PADDING_X);
-        const paddedY = Math.max(0, y - PADDING_Y);
-        const paddedWidth = width + (PADDING_X * 2);
-        const paddedHeight = height + (PADDING_Y * 2);
+        // Add padding
+        const paddedX = Math.max(0, x - PADDING);
+        const paddedY = Math.max(0, y - PADDING);
+        const paddedWidth = width + (PADDING * 2);
+        const paddedHeight = height + (PADDING * 2);
 
         return {
           field,
