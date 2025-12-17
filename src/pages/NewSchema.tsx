@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,21 +28,24 @@ export default function NewSchema() {
     { id: crypto.randomUUID(), name: '', type: 'string', description: '', required: true }
   ]);
   const [exampleFile, setExampleFile] = useState<File | null>(null);
-  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (fileUrl) URL.revokeObjectURL(fileUrl);
-      setExampleFile(file);
-      setFileUrl(URL.createObjectURL(file));
+  const handleFileChange = (file: File) => {
+    setExampleFile(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file && (file.type === 'application/pdf' || file.type.startsWith('image/'))) {
+      handleFileChange(file);
     }
   };
 
   const removeFile = () => {
-    if (fileUrl) URL.revokeObjectURL(fileUrl);
     setExampleFile(null);
-    setFileUrl(null);
   };
 
   const addField = () => {
@@ -132,29 +135,6 @@ export default function NewSchema() {
 
             <Card>
               <CardHeader className="py-2 px-3">
-                <CardTitle className="text-xs font-medium">Example Document</CardTitle>
-              </CardHeader>
-              <CardContent className="px-3 pb-3">
-                {exampleFile ? (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="truncate">{exampleFile.name}</span>
-                    <Button type="button" variant="ghost" size="sm" onClick={removeFile} className="h-6 text-xs text-destructive">
-                      Remove
-                    </Button>
-                  </div>
-                ) : (
-                  <Input
-                    type="file"
-                    accept=".pdf,.png,.jpg,.jpeg"
-                    onChange={handleFileChange}
-                    className="h-7 text-sm"
-                  />
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="py-2 px-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-xs font-medium">Fields</CardTitle>
                   <Button type="button" variant="outline" size="sm" onClick={addField} className="h-6 text-xs px-2">
@@ -239,17 +219,45 @@ export default function NewSchema() {
           </form>
         </div>
 
-        {/* Right: Document Preview */}
-        <div className="w-1/2 h-full bg-muted/30">
-          {fileUrl ? (
-            <PDFViewerWithBoxes
-              file={exampleFile}
-              boundingBoxes={{}}
-              highlightedField={null}
-            />
+        {/* Right: Document Upload & Preview */}
+        <div 
+          className={`w-1/2 h-full relative ${isDragging ? 'bg-primary/5' : 'bg-muted/30'}`}
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={handleDrop}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.png,.jpg,.jpeg"
+            onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0])}
+            className="hidden"
+          />
+          {exampleFile ? (
+            <>
+              <PDFViewerWithBoxes
+                file={exampleFile}
+                boundingBoxes={{}}
+                highlightedField={null}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={removeFile}
+                className="absolute top-2 right-2 h-6 text-xs z-10"
+              >
+                Remove
+              </Button>
+            </>
           ) : (
-            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-              Upload a document to preview
+            <div 
+              className={`flex flex-col items-center justify-center h-full cursor-pointer border-2 border-dashed m-2 rounded transition-colors ${isDragging ? 'border-primary' : 'border-border'}`}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <p className="text-sm text-muted-foreground">Drop document here</p>
+              <p className="text-xs text-muted-foreground mt-1">or click to browse</p>
+              <p className="text-xs text-muted-foreground/60 mt-2">PDF, PNG, JPG</p>
             </div>
           )}
         </div>
