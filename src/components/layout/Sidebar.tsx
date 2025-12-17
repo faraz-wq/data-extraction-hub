@@ -1,9 +1,27 @@
-import { LogOut } from 'lucide-react';
+import {
+  LogOut,
+  LayoutDashboard,
+  FileText,
+  Database,
+  Key,
+  Settings,
+  Upload
+} from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { NavLink } from '@/components/NavLink';
 
 export function Sidebar() {
   const { logout } = useAuth();
+
+  const navItems = [
+    { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/extract', icon: Upload, label: 'Extract' },
+    { to: '/sessions', icon: FileText, label: 'Sessions' },
+    { to: '/schemas', icon: Database, label: 'Schemas' },
+    { to: '/api-keys', icon: Key, label: 'API Keys' },
+    { to: '/settings', icon: Settings, label: 'Settings' },
+  ];
 
   return (
     <aside className="fixed inset-y-0 left-0 z-50 w-16 bg-sidebar border-r border-sidebar-border flex flex-col items-center py-4">
@@ -16,8 +34,20 @@ export function Sidebar() {
         />
       </div>
 
-      {/* Navigation - Empty for now as requested */}
-      <div className="flex-1" />
+      {/* Navigation */}
+      <nav className="flex-1 w-full px-2 space-y-2">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            className="flex items-center justify-center w-full h-10 rounded-md transition-colors text-muted-foreground hover:bg-muted hover:text-foreground"
+            activeClassName="bg-primary/10 text-primary"
+            title={item.label}
+          >
+            <item.icon className="w-5 h-5" />
+          </NavLink>
+        ))}
+      </nav>
 
       {/* User section */}
       <div className="mt-auto pb-4">
