@@ -14,6 +14,7 @@ interface ResultsViewProps {
   onFieldHover?: (field: string | null) => void;
   onFieldClick?: (field: string) => void;
   highlightedField?: string | null;
+  onPageClick?: (page: number) => void;
 }
 
 function flattenObject(obj: any, prefix = '', res: Record<string, any> = {}) {
@@ -45,7 +46,7 @@ function flattenObject(obj: any, prefix = '', res: Record<string, any> = {}) {
   return res;
 }
 
-export function ResultsView({ result, onFieldHover, onFieldClick, highlightedField }: ResultsViewProps) {
+export function ResultsView({ result, onFieldHover, onFieldClick, highlightedField, onPageClick }: ResultsViewProps) {
   const [feedbackState, setFeedbackState] = useState<Record<string, { type: 'upvote' | 'downvote', text?: string }>>({});
   const [loadingFeedback, setLoadingFeedback] = useState<Record<string, boolean>>({});
   const [feedbackText, setFeedbackText] = useState<Record<string, string>>({});
@@ -60,13 +61,14 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
     toast({ title: 'Copied' });
   };
 
-  const getCitationForField = (fieldName: string): string | undefined => {
+  const renderCitation = (fieldName: string) => {
     const boxes = result.bounding_boxes?.[fieldName];
+
     if (boxes && boxes.length > 0) {
-      const uniqueLocations = Array.from(new Set(boxes.map(b => {
+      const locations = boxes.map(b => {
         // Prefer explicit document title from bounding box if available
         if (b.document_title) {
-          return `${b.document_title} (Page ${b.page})`;
+          return { text: `${b.document_title} (Page ${b.page})`, page: b.page };
         }
 
         let titlePrefix = '';
@@ -84,11 +86,44 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
           }
         }
 
-        return `${titlePrefix}${b.filename} (Page ${b.page})`;
-      })));
-      return uniqueLocations.join(', ');
+        return { text: `${titlePrefix}${b.filename} (Page ${b.page})`, page: b.page };
+      });
+
+      // Deduplicate by text
+      const uniqueLocations = locations.filter((loc, index, self) =>
+        index === self.findIndex((t) => t.text === loc.text)
+      );
+
+      return (
+        <div className="flex flex-wrap gap-1 mt-1">
+          {uniqueLocations.map((loc, i) => (
+            <span
+              key={i}
+              className="text-[10px] text-muted-foreground italic hover:text-primary hover:underline cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                onPageClick?.(loc.page);
+              }}
+              title="Click to jump to page"
+            >
+              {loc.text}{i < uniqueLocations.length - 1 ? ',' : ''}
+            </span>
+          ))}
+        </div>
+      );
     }
-    return result.citations?.[fieldName];
+
+    // Fallback to text citation if no bounding boxes
+    const textCitation = result.citations?.[fieldName];
+    if (textCitation) {
+      return (
+        <p className="text-[10px] text-muted-foreground mt-1 italic">
+          {textCitation}
+        </p>
+      );
+    }
+
+    return null;
   };
 
   const renderValue = (value: unknown): string => {
@@ -153,7 +188,6 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-1">
           {Object.entries(flattenedSummary).map(([key, value], index) => {
-            const citation = getCitationForField(key);
             const isHighlighted = highlightedField === key;
             const currentFeedback = feedbackState[key];
             const isLoading = loadingFeedback[key];
@@ -194,11 +228,7 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
                       {renderValue(value)}
                     </div>
 
-                    {citation && (
-                      <p className="text-[10px] text-muted-foreground mt-1 italic">
-                        {citation}
-                      </p>
-                    )}
+                    {renderCitation(key)}
                   </div>
 
                   <Popover

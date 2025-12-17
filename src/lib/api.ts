@@ -330,16 +330,14 @@ class ApiClient {
     formData.append('schema_id', schemaId);
     files.forEach((file) => formData.append('files', file));
 
-    // Note: extract-custom requires API Key, not JWT
-    if (!this.apiKey) {
-      throw new Error('API Key is required for extraction');
+    const headers: Record<string, string> = {};
+    if (this.accessToken) {
+      headers['Authorization'] = `Bearer ${this.accessToken}`;
     }
 
     const response = await fetch(`${API_BASE_URL}/v1/extract-custom`, {
       method: 'POST',
-      headers: {
-        'X-API-Key': this.apiKey,
-      },
+      headers,
       body: formData,
     });
 
@@ -348,7 +346,32 @@ class ApiClient {
       throw new Error(error.detail || `Extraction failed: ${response.status}`);
     }
 
-    return response.json();
+    const data = await response.json();
+
+    // Transform flat response to SessionDetail format
+    const {
+      session_id,
+      bounding_boxes,
+      citations,
+      annotated_files,
+      _token_usage,
+      source_documents,
+      _errors,
+      ...summaryFields
+    } = data;
+
+    return {
+      session_id: session_id || 'temp-' + Date.now(),
+      application_type: `custom:${schemaId}`,
+      created_at: new Date().toISOString(),
+      file_count: files.length,
+      summary: summaryFields,
+      bounding_boxes: bounding_boxes || {},
+      citations: citations || {},
+      documents: [],
+      source_documents: source_documents || [],
+      errors: _errors || [],
+    };
   }
 
   async extractSummary(applicationType: string, files: File[]): Promise<SessionDetail> {
@@ -356,8 +379,14 @@ class ApiClient {
     formData.append('application_type', applicationType);
     files.forEach((file) => formData.append('files', file));
 
+    const headers: Record<string, string> = {};
+    if (this.accessToken) {
+      headers['Authorization'] = `Bearer ${this.accessToken}`;
+    }
+
     const response = await fetch(`${API_BASE_URL}/extract-summary`, {
       method: 'POST',
+      headers,
       body: formData,
     });
 

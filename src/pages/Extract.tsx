@@ -16,6 +16,7 @@ export default function Extract() {
   // Separate state for hover and selection
   const [hoveredField, setHoveredField] = useState<string | null>(null);
   const [selectedField, setSelectedField] = useState<string | null>(null);
+  const [pageNumber, setPageNumber] = useState(1);
 
   // Derived state: hover takes precedence for preview, but selection persists
   const activeField = hoveredField || selectedField;
@@ -46,6 +47,7 @@ export default function Extract() {
     setUploadedFile(files[0] || null);
     setSelectedField(null);
     setHoveredField(null);
+    setPageNumber(1);
 
     try {
       let result;
@@ -119,12 +121,15 @@ export default function Extract() {
                 onFieldHover={handleFieldHover}
                 onFieldClick={handleFieldClick}
                 highlightedField={activeField}
+                onPageClick={setPageNumber}
               />
               <PDFViewerWithBoxes
                 file={uploadedFile}
                 boundingBoxes={extractionResult.bounding_boxes}
                 highlightedField={activeField}
                 onFieldClick={handleFieldClick}
+                page={pageNumber}
+                onPageChange={setPageNumber}
               />
             </div>
           ) : (

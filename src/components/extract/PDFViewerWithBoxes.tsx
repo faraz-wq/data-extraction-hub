@@ -13,6 +13,8 @@ interface PDFViewerWithBoxesProps {
   boundingBoxes?: Record<string, BoundingBox[]>;
   highlightedField?: string | null;
   onFieldClick?: (field: string) => void;
+  page?: number;
+  onPageChange?: (page: number) => void;
 }
 
 export function PDFViewerWithBoxes({
@@ -20,17 +22,28 @@ export function PDFViewerWithBoxes({
   boundingBoxes = {},
   highlightedField,
   onFieldClick,
+  page,
+  onPageChange,
 }: PDFViewerWithBoxesProps) {
   const [numPages, setNumPages] = useState<number>(0);
-  const [pageNumber, setPageNumber] = useState(1);
+  const [internalPage, setInternalPage] = useState(1);
   const [scale, setScale] = useState(1.0);
   const [pageWidth, setPageWidth] = useState(0);
   const [pageHeight, setPageHeight] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const currentPage = page !== undefined ? page : internalPage;
+
+  const handlePageChange = (newPage: number) => {
+    if (page === undefined) {
+      setInternalPage(newPage);
+    }
+    onPageChange?.(newPage);
+  };
+
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
-    setPageNumber(1);
+    handlePageChange(1);
   };
 
   const onPageLoadSuccess = ({ width, height }: { width: number; height: number }) => {
@@ -38,8 +51,8 @@ export function PDFViewerWithBoxes({
     setPageHeight(height);
   };
 
-  const goToPrevPage = () => setPageNumber(prev => Math.max(1, prev - 1));
-  const goToNextPage = () => setPageNumber(prev => Math.min(numPages, prev + 1));
+  const goToPrevPage = () => handlePageChange(Math.max(1, currentPage - 1));
+  const goToNextPage = () => handlePageChange(Math.min(numPages, currentPage + 1));
   const zoomIn = () => setScale(prev => Math.min(2, prev + 0.25));
   const zoomOut = () => setScale(prev => Math.max(0.5, prev - 0.25));
 
@@ -88,16 +101,16 @@ export function PDFViewerWithBoxes({
     });
   }, [boundingBoxes, pageWidth, pageHeight]);
 
-  const currentPageBoxes = boxes.filter(box => box.page === pageNumber && box.field === highlightedField);
+  const currentPageBoxes = boxes.filter(box => box.page === currentPage && box.field === highlightedField);
 
   useEffect(() => {
     if (highlightedField) {
       const box = boxes.find(b => b.field === highlightedField);
-      if (box && box.page !== pageNumber) {
-        setPageNumber(box.page);
+      if (box && box.page !== currentPage) {
+        handlePageChange(box.page);
       }
     }
-    // Only trigger when highlightedField changes, NOT when pageNumber changes
+    // Only trigger when highlightedField changes, NOT when currentPage changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlightedField]);
 
@@ -139,7 +152,7 @@ export function PDFViewerWithBoxes({
             }
           >
             <Page
-              pageNumber={pageNumber}
+              pageNumber={currentPage}
               scale={scale}
               onLoadSuccess={onPageLoadSuccess}
               renderTextLayer={true}
@@ -187,11 +200,11 @@ export function PDFViewerWithBoxes({
       {/* Pagination */}
       {numPages > 1 && (
         <div className="flex items-center justify-center gap-2 px-2 py-1 border-t border-border text-xs">
-          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={goToPrevPage} disabled={pageNumber <= 1}>
+          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={goToPrevPage} disabled={currentPage <= 1}>
             Prev
           </Button>
-          <span className="text-muted-foreground">{pageNumber}/{numPages}</span>
-          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={goToNextPage} disabled={pageNumber >= numPages}>
+          <span className="text-muted-foreground">{currentPage}/{numPages}</span>
+          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={goToNextPage} disabled={currentPage >= numPages}>
             Next
           </Button>
         </div>
