@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import { api } from '@/lib/api';
+import { PDFViewerWithBoxes } from '@/components/extract/PDFViewerWithBoxes';
 
 interface Field {
   id: string;
@@ -26,6 +27,23 @@ export default function NewSchema() {
   const [fields, setFields] = useState<Field[]>([
     { id: crypto.randomUUID(), name: '', type: 'string', description: '', required: true }
   ]);
+  const [exampleFile, setExampleFile] = useState<File | null>(null);
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (fileUrl) URL.revokeObjectURL(fileUrl);
+      setExampleFile(file);
+      setFileUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const removeFile = () => {
+    if (fileUrl) URL.revokeObjectURL(fileUrl);
+    setExampleFile(null);
+    setFileUrl(null);
+  };
 
   const addField = () => {
     setFields([...fields, { id: crypto.randomUUID(), name: '', type: 'string', description: '', required: false }]);
@@ -74,126 +92,167 @@ export default function NewSchema() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-2xl mx-auto space-y-2 p-2">
-        <div className="flex items-center justify-between">
-          <h1 className="text-base font-semibold">New Schema</h1>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/schemas')} className="h-7 text-xs">Cancel</Button>
-        </div>
+      <div className="flex h-full">
+        {/* Left: Form */}
+        <div className="w-1/2 overflow-auto p-2 space-y-2 border-r">
+          <div className="flex items-center justify-between">
+            <h1 className="text-base font-semibold">New Schema</h1>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/schemas')} className="h-7 text-xs">Cancel</Button>
+          </div>
 
-        <form onSubmit={handleSubmit} className="space-y-2">
-          <Card>
-            <CardHeader className="py-2 px-3">
-              <CardTitle className="text-xs font-medium">Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 px-3 pb-3">
-              <div className="space-y-0.5">
-                <Label htmlFor="name" className="text-xs">Name</Label>
-                <Input
-                  id="name"
-                  value={schemaName}
-                  onChange={(e) => setSchemaName(e.target.value)}
-                  placeholder="Invoice, Receipt, Contract..."
-                  className="h-7 text-sm"
-                />
-              </div>
-              <div className="space-y-0.5">
-                <Label htmlFor="description" className="text-xs">Description</Label>
-                <Textarea
-                  id="description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="What data does this schema extract?"
-                  rows={2}
-                  className="resize-none text-sm"
-                />
-              </div>
-            </CardContent>
-          </Card>
+          <form onSubmit={handleSubmit} className="space-y-2">
+            <Card>
+              <CardHeader className="py-2 px-3">
+                <CardTitle className="text-xs font-medium">Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 px-3 pb-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="name" className="text-xs">Name</Label>
+                  <Input
+                    id="name"
+                    value={schemaName}
+                    onChange={(e) => setSchemaName(e.target.value)}
+                    placeholder="Invoice, Receipt, Contract..."
+                    className="h-7 text-sm"
+                  />
+                </div>
+                <div className="space-y-0.5">
+                  <Label htmlFor="description" className="text-xs">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="What data does this schema extract?"
+                    rows={2}
+                    className="resize-none text-sm"
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="py-2 px-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-xs font-medium">Fields</CardTitle>
-                <Button type="button" variant="outline" size="sm" onClick={addField} className="h-6 text-xs px-2">
-                  Add Field
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2 px-3 pb-3">
-              {fields.map((field, index) => (
-                <div key={field.id} className="p-2 border rounded space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Field {index + 1}</span>
-                    {fields.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeField(field.id)}
-                        className="h-5 text-xs text-destructive hover:text-destructive px-1"
-                      >
-                        Remove
-                      </Button>
-                    )}
+            <Card>
+              <CardHeader className="py-2 px-3">
+                <CardTitle className="text-xs font-medium">Example Document</CardTitle>
+              </CardHeader>
+              <CardContent className="px-3 pb-3">
+                {exampleFile ? (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="truncate">{exampleFile.name}</span>
+                    <Button type="button" variant="ghost" size="sm" onClick={removeFile} className="h-6 text-xs text-destructive">
+                      Remove
+                    </Button>
                   </div>
-                  <div className="grid grid-cols-2 gap-1.5">
+                ) : (
+                  <Input
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg"
+                    onChange={handleFileChange}
+                    className="h-7 text-sm"
+                  />
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="py-2 px-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xs font-medium">Fields</CardTitle>
+                  <Button type="button" variant="outline" size="sm" onClick={addField} className="h-6 text-xs px-2">
+                    Add Field
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-2 px-3 pb-3">
+                {fields.map((field, index) => (
+                  <div key={field.id} className="p-2 border rounded space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">Field {index + 1}</span>
+                      {fields.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeField(field.id)}
+                          className="h-5 text-xs text-destructive hover:text-destructive px-1"
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <div className="space-y-0.5">
+                        <Label className="text-xs">Name</Label>
+                        <Input
+                          value={field.name}
+                          onChange={(e) => updateField(field.id, { name: e.target.value })}
+                          placeholder="field_name"
+                          className="h-7 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-0.5">
+                        <Label className="text-xs">Type</Label>
+                        <Select value={field.type} onValueChange={(value) => updateField(field.id, { type: value })}>
+                          <SelectTrigger className="h-7 text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="string">String</SelectItem>
+                            <SelectItem value="number">Number</SelectItem>
+                            <SelectItem value="date">Date</SelectItem>
+                            <SelectItem value="boolean">Boolean</SelectItem>
+                            <SelectItem value="array">Array</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                     <div className="space-y-0.5">
-                      <Label className="text-xs">Name</Label>
+                      <Label className="text-xs">Description</Label>
                       <Input
-                        value={field.name}
-                        onChange={(e) => updateField(field.id, { name: e.target.value })}
-                        placeholder="field_name"
+                        value={field.description}
+                        onChange={(e) => updateField(field.id, { description: e.target.value })}
+                        placeholder="What should be extracted?"
                         className="h-7 text-sm"
                       />
                     </div>
-                    <div className="space-y-0.5">
-                      <Label className="text-xs">Type</Label>
-                      <Select value={field.type} onValueChange={(value) => updateField(field.id, { type: value })}>
-                        <SelectTrigger className="h-7 text-sm">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="string">String</SelectItem>
-                          <SelectItem value="number">Number</SelectItem>
-                          <SelectItem value="date">Date</SelectItem>
-                          <SelectItem value="boolean">Boolean</SelectItem>
-                          <SelectItem value="array">Array</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <label className="flex items-center gap-1.5 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={field.required}
+                        onChange={(e) => updateField(field.id, { required: e.target.checked })}
+                        className="rounded border-border"
+                      />
+                      Required
+                    </label>
                   </div>
-                  <div className="space-y-0.5">
-                    <Label className="text-xs">Description</Label>
-                    <Input
-                      value={field.description}
-                      onChange={(e) => updateField(field.id, { description: e.target.value })}
-                      placeholder="What should be extracted?"
-                      className="h-7 text-sm"
-                    />
-                  </div>
-                  <label className="flex items-center gap-1.5 text-xs">
-                    <input
-                      type="checkbox"
-                      checked={field.required}
-                      onChange={(e) => updateField(field.id, { required: e.target.checked })}
-                      className="rounded border-border"
-                    />
-                    Required
-                  </label>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+                ))}
+              </CardContent>
+            </Card>
 
-          <div className="flex justify-end gap-1.5">
-            <Button type="button" variant="outline" size="sm" onClick={() => navigate('/schemas')} className="h-7 text-xs">
-              Cancel
-            </Button>
-            <Button type="submit" size="sm" disabled={isSubmitting} className="h-7 text-xs">
-              {isSubmitting ? 'Creating...' : 'Create Schema'}
-            </Button>
-          </div>
-        </form>
+            <div className="flex justify-end gap-1.5">
+              <Button type="button" variant="outline" size="sm" onClick={() => navigate('/schemas')} className="h-7 text-xs">
+                Cancel
+              </Button>
+              <Button type="submit" size="sm" disabled={isSubmitting} className="h-7 text-xs">
+                {isSubmitting ? 'Creating...' : 'Create Schema'}
+              </Button>
+            </div>
+          </form>
+        </div>
+
+        {/* Right: Document Preview */}
+        <div className="w-1/2 h-full bg-muted/30">
+          {fileUrl ? (
+            <PDFViewerWithBoxes
+              file={exampleFile}
+              boundingBoxes={{}}
+              highlightedField={null}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+              Upload a document to preview
+            </div>
+          )}
+        </div>
       </div>
     </DashboardLayout>
   );
