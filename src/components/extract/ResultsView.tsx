@@ -104,7 +104,11 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
                 e.stopPropagation();
                 onPageClick?.(loc.page);
               }}
-              title="Click to jump to page"
+              onMouseEnter={(e) => {
+                e.stopPropagation();
+                onPageClick?.(loc.page);
+              }}
+              title="Click or hover to jump to page"
             >
               {loc.text}{i < uniqueLocations.length - 1 ? ',' : ''}
             </span>
