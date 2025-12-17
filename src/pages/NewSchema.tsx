@@ -74,29 +74,29 @@ export default function NewSchema() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-2xl mx-auto space-y-4">
+      <div className="max-w-2xl mx-auto space-y-2 p-2">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold">New Schema</h1>
-          <Button variant="ghost" onClick={() => navigate('/schemas')}>Cancel</Button>
+          <h1 className="text-base font-semibold">New Schema</h1>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/schemas')} className="h-7 text-xs">Cancel</Button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-2">
           <Card>
-            <CardHeader className="py-3">
-              <CardTitle className="text-sm font-medium">Details</CardTitle>
+            <CardHeader className="py-2 px-3">
+              <CardTitle className="text-xs font-medium">Details</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-1">
+            <CardContent className="space-y-2 px-3 pb-3">
+              <div className="space-y-0.5">
                 <Label htmlFor="name" className="text-xs">Name</Label>
                 <Input
                   id="name"
                   value={schemaName}
                   onChange={(e) => setSchemaName(e.target.value)}
                   placeholder="Invoice, Receipt, Contract..."
-                  className="h-8"
+                  className="h-7 text-sm"
                 />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 <Label htmlFor="description" className="text-xs">Description</Label>
                 <Textarea
                   id="description"
@@ -104,24 +104,24 @@ export default function NewSchema() {
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="What data does this schema extract?"
                   rows={2}
-                  className="resize-none"
+                  className="resize-none text-sm"
                 />
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="py-3">
+            <CardHeader className="py-2 px-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium">Fields</CardTitle>
-                <Button type="button" variant="outline" size="sm" onClick={addField} className="h-7 text-xs">
+                <CardTitle className="text-xs font-medium">Fields</CardTitle>
+                <Button type="button" variant="outline" size="sm" onClick={addField} className="h-6 text-xs px-2">
                   Add Field
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2 px-3 pb-3">
               {fields.map((field, index) => (
-                <div key={field.id} className="p-3 border rounded-md space-y-2">
+                <div key={field.id} className="p-2 border rounded space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">Field {index + 1}</span>
                     {fields.length > 1 && (
@@ -130,26 +130,26 @@ export default function NewSchema() {
                         variant="ghost"
                         size="sm"
                         onClick={() => removeField(field.id)}
-                        className="h-6 text-xs text-destructive hover:text-destructive"
+                        className="h-5 text-xs text-destructive hover:text-destructive px-1"
                       >
                         Remove
                       </Button>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <div className="space-y-0.5">
                       <Label className="text-xs">Name</Label>
                       <Input
                         value={field.name}
                         onChange={(e) => updateField(field.id, { name: e.target.value })}
                         placeholder="field_name"
-                        className="h-8"
+                        className="h-7 text-sm"
                       />
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-0.5">
                       <Label className="text-xs">Type</Label>
                       <Select value={field.type} onValueChange={(value) => updateField(field.id, { type: value })}>
-                        <SelectTrigger className="h-8">
+                        <SelectTrigger className="h-7 text-sm">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -162,34 +162,34 @@ export default function NewSchema() {
                       </Select>
                     </div>
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-0.5">
                     <Label className="text-xs">Description</Label>
                     <Input
                       value={field.description}
                       onChange={(e) => updateField(field.id, { description: e.target.value })}
                       placeholder="What should be extracted?"
-                      className="h-8"
+                      className="h-7 text-sm"
                     />
                   </div>
-                  <label className="flex items-center gap-2 text-xs">
+                  <label className="flex items-center gap-1.5 text-xs">
                     <input
                       type="checkbox"
                       checked={field.required}
                       onChange={(e) => updateField(field.id, { required: e.target.checked })}
                       className="rounded border-border"
                     />
-                    Required field
+                    Required
                   </label>
                 </div>
               ))}
             </CardContent>
           </Card>
 
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => navigate('/schemas')}>
+          <div className="flex justify-end gap-1.5">
+            <Button type="button" variant="outline" size="sm" onClick={() => navigate('/schemas')} className="h-7 text-xs">
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" size="sm" disabled={isSubmitting} className="h-7 text-xs">
               {isSubmitting ? 'Creating...' : 'Create Schema'}
             </Button>
           </div>
