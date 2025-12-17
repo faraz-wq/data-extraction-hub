@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Sessions from "./pages/Sessions";
 import Schemas from "./pages/Schemas";
 import NewSchema from "./pages/NewSchema";
+import EditSchema from "./pages/EditSchema";
 import ApiKeys from "./pages/ApiKeys";
 import Settings from "./pages/Settings";
 import Extract from "./pages/Extract";
@@ -73,6 +74,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <NewSchema />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/schemas/:schemaId/edit"
+        element={
+          <ProtectedRoute>
+            <EditSchema />
           </ProtectedRoute>
         }
       />
