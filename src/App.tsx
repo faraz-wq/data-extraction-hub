@@ -10,6 +10,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Sessions from "./pages/Sessions";
 import Schemas from "./pages/Schemas";
+import NewSchema from "./pages/NewSchema";
 import ApiKeys from "./pages/ApiKeys";
 import Settings from "./pages/Settings";
 import Extract from "./pages/Extract";
@@ -64,6 +65,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Schemas />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/schemas/new"
+        element={
+          <ProtectedRoute>
+            <NewSchema />
           </ProtectedRoute>
         }
       />
