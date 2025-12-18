@@ -105,12 +105,14 @@ export default function Extract() {
     <DashboardLayout>
       <div className="h-[calc(100vh-4rem)] flex flex-col gap-2">
         {/* Slim Top Bar - Upload Form */}
-        <UploadForm
-          schemas={schemas}
-          isLoadingSchemas={isLoadingSchemas}
-          onExtract={handleExtract}
-          isExtracting={isExtracting}
-        />
+        {!extractionResult && (
+          <UploadForm
+            schemas={schemas}
+            isLoadingSchemas={isLoadingSchemas}
+            onExtract={handleExtract}
+            isExtracting={isExtracting}
+          />
+        )}
 
         {/* Main Content - Results Left, PDF Right */}
         <div className="flex-1 min-h-0">
