@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from '@/hooks/use-toast';
 import { api } from '@/lib/api';
 import { PDFViewerWithBoxes } from '@/components/extract/PDFViewerWithBoxes';
+import { Trash2, Plus } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 
 interface Field {
   id: string;
@@ -30,6 +32,14 @@ export default function NewSchema() {
   const [exampleFile, setExampleFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const lastFieldRef = useRef<HTMLInputElement>(null);
+
+  // Auto-focus the new field's name input when added
+  useEffect(() => {
+    if (fields.length > 1) {
+      lastFieldRef.current?.focus();
+    }
+  }, [fields.length]);
 
   const handleFileChange = (file: File) => {
     setExampleFile(file);
@@ -49,7 +59,16 @@ export default function NewSchema() {
   };
 
   const addField = () => {
-    setFields([...fields, { id: crypto.randomUUID(), name: '', type: 'string', description: '', required: false }]);
+    setFields([...fields, { id: crypto.randomUUID(), name: '', type: 'string', description: '', required: true }]);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (index === fields.length - 1) {
+        addField();
+      }
+    }
   };
 
   const removeField = (id: string) => {
@@ -64,7 +83,7 @@ export default function NewSchema() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!schemaName.trim()) {
       toast({ title: 'Error', description: 'Schema name is required', variant: 'destructive' });
       return;
@@ -137,42 +156,33 @@ export default function NewSchema() {
               <CardHeader className="py-2 px-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-xs font-medium">Fields</CardTitle>
-                  <Button type="button" variant="outline" size="sm" onClick={addField} className="h-6 text-xs px-2">
-                    Add Field
-                  </Button>
                 </div>
               </CardHeader>
               <CardContent className="space-y-2 px-3 pb-3">
-                {fields.map((field, index) => (
-                  <div key={field.id} className="p-2 border rounded space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">Field {index + 1}</span>
-                      {fields.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeField(field.id)}
-                          className="h-5 text-xs text-destructive hover:text-destructive px-1"
-                        >
-                          Remove
-                        </Button>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <div className="space-y-0.5">
-                        <Label className="text-xs">Name</Label>
+                <div className="space-y-1">
+                  {fields.map((field, index) => (
+                    <div
+                      key={field.id}
+                      className="flex items-center gap-2 p-1.5 border rounded-md group hover:border-primary/50 transition-colors bg-card/50"
+                    >
+                      <div className="flex-[2] min-w-[140px]">
                         <Input
+                          ref={index === fields.length - 1 ? lastFieldRef : null}
                           value={field.name}
                           onChange={(e) => updateField(field.id, { name: e.target.value })}
+                          onKeyDown={(e) => handleKeyDown(e, index)}
                           placeholder="field_name"
-                          className="h-7 text-sm"
+                          className="h-8 text-sm border-transparent hover:border-input focus:border-input bg-transparent focus:bg-background transition-all"
+                          autoFocus={index > 0}
                         />
                       </div>
-                      <div className="space-y-0.5">
-                        <Label className="text-xs">Type</Label>
-                        <Select value={field.type} onValueChange={(value) => updateField(field.id, { type: value })}>
-                          <SelectTrigger className="h-7 text-sm">
+
+                      <div className="w-[110px]">
+                        <Select
+                          value={field.type}
+                          onValueChange={(value) => updateField(field.id, { type: value })}
+                        >
+                          <SelectTrigger className="h-8 text-sm border-transparent hover:border-input focus:border-input bg-transparent focus:bg-background transition-all">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -184,27 +194,52 @@ export default function NewSchema() {
                           </SelectContent>
                         </Select>
                       </div>
+
+                      <div className="flex-[3] min-w-[180px]">
+                        <Input
+                          value={field.description}
+                          onChange={(e) => updateField(field.id, { description: e.target.value })}
+                          onKeyDown={(e) => handleKeyDown(e, index)}
+                          placeholder="Description (optional)"
+                          className="h-8 text-sm border-transparent hover:border-input focus:border-input bg-transparent focus:bg-background transition-all"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2 px-2 border-l h-6">
+                        <Switch
+                          checked={field.required}
+                          onCheckedChange={(checked) => updateField(field.id, { required: checked })}
+                          className="scale-75"
+                        />
+                        <span className="text-[10px] text-muted-foreground font-medium uppercase select-none">Req</span>
+                      </div>
+
+                      <div className="w-8 flex justify-center">
+                        {fields.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeField(field.id)}
+                            className="h-7 w-7 p-0 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <div className="space-y-0.5">
-                      <Label className="text-xs">Description</Label>
-                      <Input
-                        value={field.description}
-                        onChange={(e) => updateField(field.id, { description: e.target.value })}
-                        placeholder="What should be extracted?"
-                        className="h-7 text-sm"
-                      />
-                    </div>
-                    <label className="flex items-center gap-1.5 text-xs">
-                      <input
-                        type="checkbox"
-                        checked={field.required}
-                        onChange={(e) => updateField(field.id, { required: e.target.checked })}
-                        className="rounded border-border"
-                      />
-                      Required
-                    </label>
-                  </div>
-                ))}
+                  ))}
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={addField}
+                  className="w-full h-8 text-xs border-dashed border-2 hover:border-primary/50 hover:bg-primary/5 text-muted-foreground hover:text-primary mt-1"
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Add Field
+                </Button>
               </CardContent>
             </Card>
 
@@ -220,7 +255,7 @@ export default function NewSchema() {
         </div>
 
         {/* Right: Document Upload & Preview */}
-        <div 
+        <div
           className={`w-1/2 h-full relative ${isDragging ? 'bg-primary/5' : 'bg-muted/30'}`}
           onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
           onDragLeave={() => setIsDragging(false)}
@@ -251,7 +286,7 @@ export default function NewSchema() {
               </Button>
             </>
           ) : (
-            <div 
+            <div
               className={`flex flex-col items-center justify-center h-full cursor-pointer border-2 border-dashed m-2 rounded transition-colors ${isDragging ? 'border-primary' : 'border-border'}`}
               onClick={() => fileInputRef.current?.click()}
             >
