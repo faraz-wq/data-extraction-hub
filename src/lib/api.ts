@@ -45,6 +45,7 @@ interface SessionDetail extends Session {
   documents: Document[];
   source_documents?: Array<{ filename: string; document_title: string }>;
   errors?: any[];
+  validation_summary?: string;
 }
 
 interface BoundingBox {
@@ -371,6 +372,7 @@ class ApiClient {
       documents: [],
       source_documents: source_documents || [],
       errors: _errors || [],
+      validation_summary: data.validation_summary,
     };
   }
 
@@ -420,6 +422,7 @@ class ApiClient {
       documents: [],
       source_documents: source_documents || [],
       errors: _errors || [],
+      validation_summary: data.validation_summary,
     };
   }
 

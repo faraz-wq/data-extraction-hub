@@ -5,7 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { api, SessionDetail } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import { ThumbsUp, ThumbsDown, AlertCircle, X, Check } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, AlertCircle, X, Check, Flag, MessageSquare } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -150,10 +150,16 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
   };
 
   const toggleIssue = (field: string) => {
+    const isRejected = fieldStatuses[field] === 'rejected';
     setFieldStatuses(prev => ({
       ...prev,
-      [field]: prev[field] === 'rejected' ? null : 'rejected'
+      [field]: isRejected ? null : 'rejected'
     }));
+
+    // Automatically close popover if unflagging
+    if (isRejected) {
+      setActiveFeedbackField(null);
+    }
   };
 
   const handleFeedback = async (field: string, type: 'upvote' | 'downvote', text?: string) => {
@@ -193,25 +199,96 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
             ID: {result.session_id}
           </span>
         </div>
-        <Button variant="outline" size="sm" className="h-7 text-xs shrink-0" asChild>
-          <Link to={`/sessions/${result.session_id}`}>View Details</Link>
+        <Button
+          variant="default"
+          size="sm"
+          className="h-7 text-xs shrink-0 font-bold"
+          onClick={() => setShowSummaryModal(true)}
+        >
+          Complete Review
         </Button>
       </div>
 
-      {/* Errors Section */}
-      {result.errors && result.errors.length > 0 && (
-        <div className="p-3 bg-red-500/10 border-b border-red-500/20">
-          <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-xs font-medium mb-1">
-            <AlertCircle className="w-4 h-4" />
-            Extraction Issues
+      {/* Validation Alert Bar */}
+      {(() => {
+        const missingFields = Object.entries(flattenedSummary)
+          .filter(([_, v]) => v === null || v === undefined || v === '' || (Array.isArray(v) && v.length === 0))
+          .map(([k]) => k);
+
+        const mismatches = (result.errors || []).map((err: any) => {
+          if (typeof err === 'object' && err?.field) return err.field;
+          const match = typeof err === 'string' ? err.match(/field:?\s*([\w\.]+)/i) : null;
+          return match ? match[1] : 'Unknown';
+        });
+
+        // If validation_summary is null or empty (backend found no issues), hide the bar.
+        // If it's undefined (older session), fallback to the local check.
+        if (result.validation_summary === null || result.validation_summary === '') return null;
+        if (result.validation_summary === undefined && missingFields.length === 0 && mismatches.length === 0) return null;
+
+
+        return (
+          <div className="bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200 dark:border-amber-900/50 shrink-0 overflow-hidden transition-all duration-300">
+            <div className="px-3 py-1.5 flex items-center justify-between">
+              <div className="min-w-0 flex-1 py-0.5">
+                <div className="text-[10px] leading-tight">
+                  <span className="inline-flex items-center gap-1.5 font-bold uppercase tracking-tight text-amber-700 dark:text-amber-400 mr-2 align-middle">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    Validation Summary
+                  </span>
+                  <span className="text-amber-600/90 dark:text-amber-400/80 font-medium align-middle">
+                    {result.validation_summary || (
+                      <>
+                        {missingFields.length > 0 && (
+                          <span>
+                            <strong>Missing:</strong> {missingFields.join(', ')}
+                          </span>
+                        )}
+                        {missingFields.length > 0 && mismatches.length > 0 && <span className="mx-1.5 opacity-30">|</span>}
+                        {mismatches.length > 0 && (
+                          <span>
+                            <strong>Mismatches:</strong> {mismatches.join(', ')}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-3 pb-3 pt-2 border-t border-amber-200/50 bg-amber-50/50 dark:bg-amber-950/10">
+              <div className="space-y-3">
+                {/* Mismatches Section */}
+                {result.errors && result.errors.length > 0 && (
+                  <div className="flex flex-col gap-1.5">
+                    <div className="text-[9px] font-bold text-amber-700/70 dark:text-amber-400/70 uppercase tracking-widest">
+                      Extraction Remarks
+                    </div>
+                    <ul className="space-y-1.5">
+                      {result.errors.map((err: any, i: number) => (
+                        <li key={i} className="text-[10px] text-amber-800/90 dark:text-amber-200/90 leading-relaxed flex items-start gap-2">
+                          <div className="w-1 h-1 rounded-full bg-amber-400 dark:bg-amber-600 mt-1.5 shrink-0" />
+                          <div>
+                            {typeof err === 'object' ? (
+                              <>
+                                <span className="font-semibold text-amber-900 dark:text-amber-100 mr-1.5">{err.field}:</span>
+                                <span>{err.message}</span>
+                              </>
+                            ) : (
+                              <span>{err}</span>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-          <ul className="list-disc list-inside text-[10px] text-red-600/80 dark:text-red-400/80 space-y-0.5">
-            {result.errors.map((err: any, i: number) => (
-              <li key={i}>{typeof err === 'string' ? err : JSON.stringify(err)}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Fields */}
       <ScrollArea className="flex-1">
@@ -257,28 +334,7 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
 
                     <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                       <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className={cn(
-                                "h-6 w-6 rounded-full border transition-colors",
-                                isRejected
-                                  ? "bg-red-500 text-white border-red-600 hover:bg-red-600"
-                                  : "text-muted-foreground hover:text-red-600 hover:bg-red-50 border-input"
-                              )}
-                              onClick={() => toggleIssue(key)}
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top">
-                            <p className="text-[10px]">{isRejected ? 'Remove Flag' : 'Flag Issue'}</p>
-                          </TooltipContent>
-                        </Tooltip>
-
-                        {/* Internal Feedback System - Thumbs Up/Down (Original) */}
+                        {/* 1. Developer Feedback (AI Quality) - With Comment Box */}
                         <Popover
                           open={activeFeedbackField === key}
                           onOpenChange={(open) => {
@@ -286,67 +342,138 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
                           }}
                         >
                           <PopoverTrigger asChild>
-                            <div className="flex items-center gap-0.5 ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className={cn("h-6 w-6", feedbackState[key]?.type === 'upvote' ? "text-green-500" : "text-muted-foreground hover:text-green-500")}
-                                disabled={isLoading}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleFeedback(key, 'upvote');
-                                }}
-                              >
-                                <ThumbsUp className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className={cn("h-6 w-6", feedbackState[key]?.type === 'downvote' ? "text-red-500" : "text-muted-foreground hover:text-red-500")}
-                                disabled={isLoading}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleFeedback(key, 'downvote');
-                                }}
-                              >
-                                <ThumbsDown className="h-3 w-3" />
-                              </Button>
+                            <div className="flex items-center border rounded-md px-0.5 bg-muted/20 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className={cn("h-6 w-6 rounded-sm", feedbackState[key]?.type === 'upvote' ? "text-green-600 bg-green-50" : "text-muted-foreground hover:text-green-600")}
+                                    onClick={() => handleFeedback(key, 'upvote')}
+                                  >
+                                    <ThumbsUp className="h-3 w-3" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top"><p className="text-[10px]">This helps us improve our system</p></TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className={cn("h-6 w-6 rounded-sm", feedbackState[key]?.type === 'downvote' ? "text-red-600 bg-red-50" : "text-muted-foreground hover:text-red-600")}
+                                    onClick={() => handleFeedback(key, 'downvote')}
+                                  >
+                                    <ThumbsDown className="h-3 w-3" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top"><p className="text-[10px]">This helps us improve our system</p></TooltipContent>
+                              </Tooltip>
                             </div>
                           </PopoverTrigger>
-                          <PopoverContent className="w-64 p-3" align="end" side="left">
-                            <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
-                              <div className="flex items-center justify-between">
-                                <h4 className="font-medium text-xs">Feedback</h4>
-                                <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">Optional</span>
+                          <PopoverContent className="w-72 p-0 overflow-hidden" align="end" side="left">
+                            <div className="bg-muted px-3 py-2 border-b">
+                              <h4 className="font-bold text-[11px] uppercase tracking-wider text-foreground">
+                                System Feedback (AI Improvement)
+                              </h4>
+                            </div>
+                            <div className="p-3 space-y-4" onClick={(e) => e.stopPropagation()}>
+                              <div className="space-y-2">
+                                <label className="text-[10px] font-medium text-muted-foreground uppercase">
+                                  How did the system do?
+                                </label>
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="outline"
+                                    className={cn(
+                                      "flex-1 h-8 text-[10px] gap-2",
+                                      feedbackState[key]?.type === 'upvote' && "bg-green-50 border-green-200 text-green-700"
+                                    )}
+                                    onClick={() => handleFeedback(key, 'upvote', feedbackText[key])}
+                                  >
+                                    <ThumbsUp className="h-3 w-3" /> Correct
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    className={cn(
+                                      "flex-1 h-8 text-[10px] gap-2",
+                                      feedbackState[key]?.type === 'downvote' && "bg-red-50 border-red-200 text-red-700"
+                                    )}
+                                    onClick={() => handleFeedback(key, 'downvote', feedbackText[key])}
+                                  >
+                                    <ThumbsDown className="h-3 w-3" /> Incorrect
+                                  </Button>
+                                </div>
                               </div>
-                              <Textarea
-                                placeholder="Tell us more about this result..."
-                                className="h-20 text-xs resize-none"
-                                value={feedbackText[key] || ''}
-                                onChange={(e) => setFeedbackText(prev => ({ ...prev, [key]: e.target.value }))}
-                              />
-                              <div className="flex justify-end gap-2">
+
+                              <div className="space-y-2">
+                                <label className="text-[10px] font-medium text-muted-foreground uppercase">
+                                  Details / Notes
+                                </label>
+                                <Textarea
+                                  placeholder="Tell the developers what was wrong or right..."
+                                  className="h-20 text-xs resize-none"
+                                  value={feedbackText[key] || ''}
+                                  onChange={(e) => setFeedbackText(prev => ({ ...prev, [key]: e.target.value }))}
+                                />
+                              </div>
+
+                              <div className="flex justify-end gap-2 pt-2">
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-7 text-xs"
+                                  className="h-8 text-xs"
                                   onClick={() => setActiveFeedbackField(null)}
                                 >
-                                  Skip
+                                  Cancel
                                 </Button>
                                 <Button
                                   size="sm"
-                                  className="h-7 text-xs"
+                                  className="h-8 text-xs px-4"
                                   onClick={() => {
                                     handleFeedback(key, feedbackState[key]?.type || 'upvote', feedbackText[key]);
+                                    setActiveFeedbackField(null);
                                   }}
                                 >
-                                  Submit
+                                  Submit Feedback
                                 </Button>
                               </div>
                             </div>
                           </PopoverContent>
                         </Popover>
+
+                        {/* 2. User Audit (Simple Toggle Flag) */}
+                        <div className="flex items-center gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className={cn(
+                                  "h-7 w-7 rounded-full border transition-all shadow-sm ml-1",
+                                  isRejected
+                                    ? "bg-red-500 text-white border-red-600 hover:bg-red-600 ring-2 ring-red-500/20"
+                                    : "text-muted-foreground hover:text-red-600 hover:bg-red-50 border-input bg-background"
+                                )}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleIssue(key);
+                                }}
+                              >
+                                <Flag className={cn("h-3.5 w-3.5", isRejected && "fill-current")} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              <p className="text-[10px] font-bold">{isRejected ? 'remove rejection' : 'mark this field as rejected'}</p>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          {feedbackState[key]?.text && (
+                            <div className="text-purple-500" title="Notes submitted to system">
+                              <MessageSquare className="h-3 w-3 fill-current opacity-70" />
+                            </div>
+                          )}
+                        </div>
                       </TooltipProvider>
                     </div>
                   </div>
@@ -363,10 +490,11 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
 
           <div className="pt-4 pb-2">
             <Button
-              className="w-full h-10 text-sm font-bold"
-              onClick={() => setShowSummaryModal(true)}
+              variant="outline"
+              className="w-full h-10 text-sm"
+              asChild
             >
-              Complete Review
+              <Link to={`/sessions/${result.session_id}`}>View Full Session Details</Link>
             </Button>
           </div>
         </div>
