@@ -263,7 +263,17 @@ class ApiClient {
   }
 
   async getSession(sessionId: string): Promise<SessionDetail> {
-    return this.request<SessionDetail>(`/v1/me/sessions/${sessionId}`);
+    const data = await this.request<SessionDetail>(`/v1/me/sessions/${sessionId}`);
+
+    // Add URLs to documents
+    if (data.documents) {
+      data.documents = data.documents.map(doc => ({
+        ...doc,
+        url: `${API_BASE_URL}/v1/me/sessions/${sessionId}/documents/${doc.filename}`
+      }));
+    }
+
+    return data;
   }
 
   // Schemas

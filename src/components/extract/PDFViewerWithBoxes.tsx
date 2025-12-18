@@ -32,6 +32,18 @@ export function PDFViewerWithBoxes({
   const [pageHeight, setPageHeight] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const memoizedFile = useMemo(() => {
+    if (typeof file === 'string') {
+      return {
+        url: file,
+        httpHeaders: {
+          Authorization: `Bearer ${localStorage.getItem('access_token')}`
+        }
+      } as any;
+    }
+    return file;
+  }, [file]);
+
   const currentPage = page !== undefined ? page : internalPage;
 
   const handlePageChange = (newPage: number) => {
@@ -138,7 +150,7 @@ export function PDFViewerWithBoxes({
       <div ref={containerRef} className="flex-1 overflow-auto bg-secondary/20 flex items-start justify-center p-2">
         <div className="relative inline-block">
           <Document
-            file={file}
+            file={memoizedFile}
             onLoadSuccess={onDocumentLoadSuccess}
             loading={
               <div className="flex items-center justify-center h-48">

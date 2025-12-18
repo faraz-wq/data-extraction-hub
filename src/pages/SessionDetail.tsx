@@ -1,33 +1,35 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { ResultsView } from '@/components/extract/ResultsView';
 import { PDFViewerWithBoxes } from '@/components/extract/PDFViewerWithBoxes';
 import { api, SessionDetail as SessionDetailType } from '@/lib/api';
-import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 export default function SessionDetail() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const [session, setSession] = useState<SessionDetailType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [highlightedField, setHighlightedField] = useState<string | null>(null);
-  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Separate state for hover and selection (matching Extract.tsx)
+  const [hoveredField, setHoveredField] = useState<string | null>(null);
+  const [selectedField, setSelectedField] = useState<string | null>(null);
+  const [pageNumber, setPageNumber] = useState(1);
+
+  // Derived state: hover takes precedence for preview, but selection persists
+  const activeField = hoveredField || selectedField;
 
   useEffect(() => {
     const fetchSession = async () => {
       if (!sessionId) return;
-
       setIsLoading(true);
       try {
         const data = await api.getSession(sessionId);
         setSession(data);
-      } catch (err) {
-        console.error('Failed to fetch session:', err);
-        setError('Failed to load session details. Please try again later.');
+      } catch (error) {
+        console.error('Failed to fetch session:', error);
         toast({
           title: 'Error',
           description: 'Failed to load session details',
@@ -41,176 +43,80 @@ export default function SessionDetail() {
     fetchSession();
   }, [sessionId]);
 
-  const handleCopyValue = async (key: string, value: unknown) => {
-    const textValue = typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
-    await navigator.clipboard.writeText(textValue);
-    setCopiedField(key);
-    toast({
-      title: 'Copied',
-      description: `${key} value copied to clipboard`,
-    });
-    setTimeout(() => setCopiedField(null), 2000);
+  const handleFieldHover = (field: string | null) => {
+    setHoveredField(field);
   };
 
-  const formatValue = (value: unknown): string => {
-    if (value === null || value === undefined) return '—';
-    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-    if (typeof value === 'number') {
-      if (Number.isFinite(value) && value > 0 && value < 1000000) {
-        return new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'USD',
-        }).format(value);
-      }
-      return value.toLocaleString();
-    }
-    if (typeof value === 'object') return JSON.stringify(value);
-    return String(value);
+  const handleFieldClick = (field: string) => {
+    setSelectedField(field);
   };
-
-  if (isLoading) {
-    return (
-      <DashboardLayout>
-        <div className="space-y-6">
-          <div className="flex items-center gap-4">
-            <div className="space-y-2">
-              <div className="h-6 w-48 shimmer rounded" />
-              <div className="h-4 w-32 shimmer rounded" />
-            </div>
-          </div>
-          <div className="grid lg:grid-cols-2 gap-6">
-            <div className="h-96 shimmer rounded-xl" />
-            <div className="h-96 shimmer rounded-xl" />
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  if (!session) {
-    return (
-      <DashboardLayout>
-        <div className="flex flex-col items-center justify-center py-20">
-          <h2 className="text-xl font-semibold mb-2">{error || 'Session Not Found'}</h2>
-          <p className="text-muted-foreground mb-4">{error ? 'There was a problem loading the session.' : "The session you're looking for doesn't exist."}</p>
-          <Button asChild>
-            <Link to="/sessions">← Back to Sessions</Link>
-          </Button>
-        </div>
-      </DashboardLayout>
-    );
-  }
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/sessions">← Back</Link>
+      <div className="h-[calc(100vh-4rem)] flex flex-col gap-2">
+        {/* Slim Top Bar - Replace UploadForm with Session Info */}
+        <div className="flex items-center justify-between px-2 py-1 shrink-0 bg-muted/20 rounded-md border border-border/50">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" asChild className="h-7 w-7 p-0 hover:bg-muted transition-colors">
+              <Link to="/sessions" className="text-muted-foreground">←</Link>
             </Button>
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-xl font-semibold text-foreground font-mono">
-                  {session.session_id}
-                </h1>
-                <Badge variant="secondary" className="text-xs">
-                  {session.application_type}
-                </Badge>
-              </div>
-              <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                <span>{new Date(session.created_at).toLocaleString()}</span>
-                <span>·</span>
-                <span>{session.file_count} {session.file_count === 1 ? 'file' : 'files'}</span>
-              </div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-xs font-bold text-foreground font-mono">
+                SESSION: {sessionId}
+              </h1>
+              {session && (
+                <>
+                  <Badge variant="outline" className="text-[10px] h-4 py-0 border-primary/20 bg-primary/5 text-primary">
+                    {session.application_type.replace('custom:', '')}
+                  </Badge>
+                  <span className="text-[10px] text-muted-foreground hidden sm:inline">
+                    • {new Date(session.created_at).toLocaleString()}
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Extracted Data */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Extracted Fields</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {Object.entries(session.summary).map(([key, value], index) => {
-                const hasBox = session.bounding_boxes?.[key];
-                const citation = session.citations?.[key];
-
-                return (
-                  <div
-                    key={key}
-                    className={cn(
-                      'group p-3 rounded-lg border transition-all cursor-pointer',
-                      highlightedField === key
-                        ? 'border-foreground bg-secondary'
-                        : 'border-border hover:border-foreground/50',
-                      'animate-fade-in'
-                    )}
-                    style={{ animationDelay: `${index * 30}ms` }}
-                    onMouseEnter={() => hasBox && setHighlightedField(key)}
-                    onMouseLeave={() => setHighlightedField(null)}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                          {key.replace(/_/g, ' ')}
-                        </p>
-                        <p className="text-foreground break-words">
-                          {formatValue(value)}
-                        </p>
-                        {citation && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Source: {citation}
-                          </p>
-                        )}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCopyValue(key, value);
-                        }}
-                      >
-                        {copiedField === key ? 'Copied' : 'Copy'}
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-
-              {Object.keys(session.summary).length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  No extracted fields available
+        {/* Main Content - Structured exactly like Extract.tsx */}
+        <div className="flex-1 min-h-0">
+          {session ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
+              <ResultsView
+                result={session}
+                onFieldHover={handleFieldHover}
+                onFieldClick={handleFieldClick}
+                highlightedField={activeField}
+                onPageClick={setPageNumber}
+              />
+              <PDFViewerWithBoxes
+                file={session.documents && session.documents.length > 0 ? session.documents[0].url : null}
+                boundingBoxes={session.bounding_boxes || {}}
+                highlightedField={activeField}
+                onFieldClick={handleFieldClick}
+                page={pageNumber}
+                onPageChange={setPageNumber}
+              />
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-full border border-dashed border-border rounded bg-muted/5">
+              {isLoading ? (
+                <div className="text-center">
+                  <div className="w-6 h-6 mx-auto mb-2 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                  <p className="text-sm font-medium text-foreground">Retrieving session data...</p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Document Viewer */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Document Preview</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {session.documents && session.documents.length > 0 ? (
-                <PDFViewerWithBoxes
-                  file={session.documents[0].url}
-                  boundingBoxes={session.bounding_boxes || {}}
-                  highlightedField={highlightedField}
-                />
               ) : (
-                <div className="h-96 flex items-center justify-center border border-dashed border-border rounded-lg">
-                  <p className="text-muted-foreground">No document preview available</p>
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Unable to find session {sessionId}
+                  </p>
+                  <Button variant="link" asChild className="mt-2 text-xs">
+                    <Link to="/sessions">Return to sessions list</Link>
+                  </Button>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          )}
         </div>
       </div>
     </DashboardLayout>
