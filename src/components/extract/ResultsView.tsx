@@ -86,6 +86,19 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
     toast({ title: 'Copied' });
   };
 
+  const defaultApplicationPage = useMemo(() => {
+    const sourceDocs = result.source_documents || result.documents;
+    if (Array.isArray(sourceDocs)) {
+      const appDoc = sourceDocs.find((d: any) =>
+        (d?.document_title || d?.filename || '').toLowerCase().includes('application')
+      );
+      if (appDoc && appDoc.page_numbers && appDoc.page_numbers.length > 0) {
+        return appDoc.page_numbers[0];
+      }
+    }
+    return 1;
+  }, [result.source_documents, result.documents]);
+
   const renderCitation = (fieldName: string) => {
     const boxes = result.bounding_boxes?.[fieldName];
 
@@ -105,7 +118,7 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
         return {
           text: `${title} (Page ${b.page})`,
           page: b.page,
-          isApplication: title?.toLowerCase().includes('application')
+          isApplication: (title || '').toLowerCase().includes('application')
         };
       });
 
@@ -133,6 +146,10 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
                   onMouseEnter={(e) => {
                     e.stopPropagation();
                     onPageClick?.(loc.page);
+                  }}
+                  onMouseLeave={(e) => {
+                    e.stopPropagation();
+                    onPageClick?.(defaultApplicationPage);
                   }}
                   title="Click or hover to jump to page"
                 >

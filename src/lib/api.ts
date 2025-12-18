@@ -43,7 +43,7 @@ interface SessionDetail extends Session {
   bounding_boxes: Record<string, BoundingBox[]>;
   citations: Record<string, string>;
   documents: Document[];
-  source_documents?: Array<{ filename: string; document_title: string }>;
+  source_documents?: Array<{ filename: string; document_title: string; page_numbers: number[] }>;
   errors?: any[];
   validation_summary?: string;
 }
@@ -60,6 +60,7 @@ interface Document {
   id: string;
   filename: string;
   url: string;
+  page_numbers?: number[];
 }
 
 interface Schema {
