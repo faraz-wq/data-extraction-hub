@@ -220,37 +220,55 @@ export default function Validate() {
 
     return (
         <DashboardLayout noPadding>
-            <div className="h-[calc(100vh-64px)] overflow-hidden flex flex-col bg-background">
-                {/* Slim Header */}
-                <header className="px-3 py-1.5 border-b border-border bg-background flex items-center justify-between shrink-0">
-                    <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
-                            if (!validationReport || confirm("Reset?")) {
+            <div className="h-screen overflow-hidden flex flex-col bg-[#F2F2F7]">
+                {/* Visual Fix: Ensure the main container fills the available height without gaps */}
+
+                {/* Slim Header - iOS Style Glassmorphism */}
+                <header className="px-4 py-2 border-b border-border/40 bg-white/80 backdrop-blur-md flex items-center justify-between shrink-0 z-20 shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-black/5" onClick={() => {
+                            if (!validationReport || confirm("Reset current session?")) {
                                 setValidationReport(null);
                                 setExtractionData(null);
                                 setFiles([]);
                                 setActiveField(null);
                             }
                         }}>
-                            <ArrowLeft className="w-3.5 h-3.5" />
+                            <ArrowLeft className="w-4 h-4" />
                         </Button>
                         <div className="flex flex-col">
-                            <h1 className="text-[11px] font-black uppercase tracking-widest text-foreground/80 leading-none">Audit Dashboard</h1>
-                            <p className="text-[8px] text-muted-foreground/60 font-medium tracking-tight">
-                                {validationReport ? `REF: ${validationReport.metadata?.validation_id?.slice(0, 8)}` : 'READY TO START'}
+                            <h1 className="text-[12px] font-bold text-foreground leading-none tracking-tight">Audit Dashboard</h1>
+                            <p className="text-[9px] text-muted-foreground font-medium mt-0.5">
+                                {validationReport ? `REF: ${validationReport.metadata?.validation_id?.slice(0, 8).toUpperCase()}` : 'Verification Workspace'}
                             </p>
                         </div>
                     </div>
 
                     {validationReport && (
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 mr-2">
+                                <div className="flex flex-col items-end">
+                                    <span className="text-[7px] font-black uppercase text-muted-foreground/50 tracking-tighter leading-none">Confidence</span>
+                                    <span className={cn(
+                                        "text-[10px] font-bold",
+                                        validationReport.confidence_score >= 0.9 ? "text-green-500" :
+                                            validationReport.confidence_score >= 0.7 ? "text-amber-500" : "text-red-500"
+                                    )}>{(validationReport.confidence_score * 100).toFixed(0)}%</span>
+                                </div>
+                                <div className="h-6 w-px bg-border/40 mx-1" />
+                                <div className="flex flex-col items-end">
+                                    <span className="text-[7px] font-black uppercase text-muted-foreground/50 tracking-tighter leading-none">Alerts</span>
+                                    <span className="text-[10px] font-bold text-red-500">{validationReport.metadata?.total_issues || 0}</span>
+                                </div>
+                            </div>
+
                             <Badge className={cn(
-                                "h-5 rounded-md px-1.5 text-[8px] font-black tracking-tighter",
-                                validationReport.auto_approved ? "bg-green-500 text-white" : "bg-amber-500 text-white"
+                                "h-6 rounded-full px-3 text-[9px] font-bold tracking-tight shadow-sm border-none transition-all",
+                                validationReport.auto_approved ? "bg-green-500/10 text-green-600" : "bg-amber-500/10 text-amber-600"
                             )}>
                                 {validationReport.auto_approved ? 'AI-PASS' : 'REVIEW'}
                             </Badge>
-                            <Button size="sm" className="h-6 px-3 font-black uppercase tracking-widest text-[8px] rounded-md">
+                            <Button size="sm" className="h-7 px-4 font-bold text-[10px] rounded-full bg-black hover:bg-black/80 text-white shadow-md">
                                 Approve
                             </Button>
                         </div>
@@ -258,38 +276,38 @@ export default function Validate() {
                 </header>
 
                 <main className="flex-1 min-h-0 flex overflow-hidden">
-                    {/* LEFT PANEL */}
-                    <div className="w-[300px] flex flex-col border-r border-border shrink-0 overflow-hidden bg-muted/[0.02]">
+                    {/* LEFT PANEL - Side List */}
+                    <div className="w-[320px] flex flex-col border-r border-border/40 shrink-0 overflow-hidden bg-white z-10">
                         {!validationReport ? (
-                            <div className="flex-1 p-3 space-y-3 overflow-y-auto">
-                                <div className="space-y-2">
-                                    <div className="space-y-1">
-                                        <label className="text-[8px] font-black uppercase text-muted-foreground/60 tracking-widest">Classification</label>
+                            <div className="flex-1 p-4 space-y-4 overflow-y-auto bg-[#F2F2F7]/30">
+                                <div className="space-y-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-bold uppercase text-muted-foreground/70 tracking-tight ml-1">Application Type</label>
                                         <select
                                             value={selectedType}
                                             onChange={(e) => setSelectedType(e.target.value)}
-                                            className="w-full px-1.5 py-1 border border-border rounded-md bg-background text-[10px] font-bold outline-none ring-1 ring-transparent focus:ring-primary/20"
+                                            className="w-full h-9 px-3 border border-border/60 rounded-xl bg-white text-[11px] font-medium outline-none shadow-sm focus:ring-2 focus:ring-black/5 transition-all"
                                             disabled={isValidating}
                                         >
-                                            <option value="">Select Service...</option>
+                                            <option value="">Select service...</option>
                                             {APPLICATION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                                         </select>
                                     </div>
 
-                                    <div className="space-y-1">
-                                        <label className="text-[8px] font-black uppercase text-muted-foreground/60 tracking-widest">Documents</label>
-                                        <div className="border border-dashed border-border/60 rounded-lg p-3 text-center hover:bg-muted/50 transition-all relative cursor-pointer">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-bold uppercase text-muted-foreground/70 tracking-tight ml-1">Evidence Files</label>
+                                        <div className="border border-dashed border-border/80 rounded-2xl p-6 text-center hover:bg-white hover:border-black/20 transition-all relative cursor-pointer group bg-white/50">
                                             <input type="file" multiple onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer" disabled={isValidating} />
-                                            <Upload className="w-5 h-5 mx-auto mb-1.5 text-muted-foreground/40" />
-                                            <p className="text-[9px] font-black uppercase tracking-tight text-muted-foreground/70">Drop Files</p>
+                                            <Upload className="w-6 h-6 mx-auto mb-2 text-muted-foreground/30 group-hover:text-black/40 transition-colors" />
+                                            <p className="text-[10px] font-bold text-muted-foreground/60">Upload documents</p>
                                         </div>
                                     </div>
 
                                     {files.length > 0 && (
-                                        <div className="bg-muted/20 p-1.5 rounded border border-border/30 space-y-0.5">
+                                        <div className="bg-white/50 p-2 rounded-xl border border-border/40 space-y-1">
                                             {files.map((f, i) => (
-                                                <div key={i} className="flex items-center gap-1.5 truncate text-[9px] text-muted-foreground/80 font-medium">
-                                                    <FileText className="w-2.5 h-2.5 shrink-0" />
+                                                <div key={i} className="flex items-center gap-2 truncate text-[10px] text-muted-foreground font-medium px-1">
+                                                    <FileText className="w-3 h-3 text-primary/40 shrink-0" />
                                                     <span className="truncate">{f.name}</span>
                                                 </div>
                                             ))}
@@ -297,75 +315,82 @@ export default function Validate() {
                                     )}
 
                                     <Button
-                                        className="w-full h-8 rounded-lg font-black uppercase tracking-[0.1em] text-[10px]"
+                                        className="w-full h-10 rounded-full font-bold text-[11px] shadow-lg shadow-black/5 bg-black hover:bg-black/90 text-white"
                                         onClick={handleValidate}
                                         disabled={isValidating || !selectedType || files.length === 0}
                                     >
-                                        {isValidating ? 'Thinking...' : 'Start Extraction'}
+                                        {isValidating ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                <span>Analyzing</span>
+                                            </div>
+                                        ) : 'Start Verification'}
                                     </Button>
                                 </div>
                             </div>
                         ) : (
                             <div className="flex-1 flex flex-col min-h-0">
-                                <div className="p-1.5 border-b border-border bg-muted/20 flex gap-1">
-                                    <div className="flex-1 bg-background border border-border/40 rounded p-1 text-center shadow-sm">
-                                        <div className="text-[7px] font-black uppercase text-muted-foreground/50 tracking-tighter leading-none">Confidence</div>
-                                        <div className="text-[11px] font-black italic tracking-tighter">{(validationReport.confidence_score * 100).toFixed(0)}%</div>
+                                {/* Explorer Header */}
+                                <div className="px-4 py-2.5 bg-white border-b border-border/30 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-black" />
+                                        <span className="text-[10px] font-bold tracking-tight uppercase">Extracted Facts</span>
                                     </div>
-                                    <div className="flex-1 bg-background border border-border/40 rounded p-1 text-center shadow-sm">
-                                        <div className="text-[7px] font-black uppercase text-muted-foreground/50 tracking-tighter leading-none">Alerts</div>
-                                        <div className="text-[11px] font-black italic tracking-tighter text-red-500">{validationReport.metadata?.total_issues || 0}</div>
-                                    </div>
+                                    <span className="text-[9px] font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
+                                        {Object.keys(extractionData.summary).filter(k => !k.startsWith('_')).length}
+                                    </span>
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto custom-scrollbar">
-                                    <div className="px-3 py-1 bg-muted/30 border-b border-border/50 text-[8px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 flex items-center justify-between">
-                                        Field Explorer
-                                        <List className="w-2.5 h-2.5" />
-                                    </div>
-                                    <div className="divide-y divide-border/5 overflow-x-hidden">
+                                {/* Scrollable Content Area */}
+                                <div className="flex-1 overflow-y-auto custom-scrollbar bg-white">
+                                    <div className="divide-y divide-border/20">
                                         {Object.entries(extractionData.summary)
                                             .filter(([k]) => !k.startsWith('_') && !['bounding_boxes', 'citations', 'source_documents'].includes(k))
                                             .map(([key, value]) => renderFieldRow(key, value))}
                                     </div>
+
+                                    {/* Visual Fix: Spacer to push content up and ensure no floating gaps */}
+                                    <div className="h-10" />
                                 </div>
                             </div>
                         )}
                     </div>
 
-                    {/* RIGHT PANEL */}
-                    <div className="flex-1 relative overflow-hidden flex flex-col bg-muted/5">
+                    {/* RIGHT PANEL - Document Canvas */}
+                    <div className="flex-1 relative overflow-hidden flex flex-col bg-[#8E8E93]/10">
                         {validationReport ? (
-                            <>
-                                <div className="px-3 py-1 border-b border-border bg-background flex items-center justify-between shrink-0">
-                                    <div className="flex items-center gap-1.5">
-                                        <Badge variant="outline" className="h-4 text-[7px] font-black tracking-widest border-primary/10 uppercase text-primary/70 px-1 bg-primary/5 rounded-sm">
+                            <div className="h-full flex flex-col scale-in">
+                                {/* Canvas Header */}
+                                <div className="px-4 py-2 border-b border-border/30 bg-white/40 backdrop-blur-sm flex items-center justify-between shrink-0">
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant="outline" className="h-5 text-[8px] font-bold border-black/5 uppercase text-black/60 px-2 bg-white/60 rounded-md shadow-sm">
                                             Evidence
                                         </Badge>
-                                        <span className="text-[8px] font-black text-muted-foreground/40 uppercase truncate max-w-[150px] tracking-tighter">
+                                        <span className="text-[10px] font-medium text-muted-foreground truncate max-w-[200px]">
                                             {files[0]?.name}
                                         </span>
                                     </div>
-                                    <div className="flex items-center gap-2 opacity-40">
-                                        <div className="flex items-center gap-1 text-[7px] font-black uppercase tracking-tighter">
-                                            <Layers className="w-2 h-2" />
-                                            Active View
-                                        </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[8px] font-bold text-muted-foreground/40 uppercase tracking-widest">Interactive Preview</span>
                                     </div>
                                 </div>
-                                <div className="flex-1">
-                                    <PDFViewerWithBoxes
-                                        file={files[0] || null}
-                                        boundingBoxes={extractionData?.bounding_boxes as Record<string, BoundingBox[]> || {}}
-                                        highlightedField={activeField}
-                                        onFieldClick={(f) => setActiveField(f)}
-                                    />
+
+                                {/* The primary document view area */}
+                                <div className="flex-1 min-h-0 bg-transparent p-2">
+                                    <div className="h-full w-full rounded-2xl overflow-hidden shadow-2xl ring-1 ring-black/5 bg-white">
+                                        <PDFViewerWithBoxes
+                                            file={files[0] || null}
+                                            boundingBoxes={extractionData?.bounding_boxes as Record<string, BoundingBox[]> || {}}
+                                            highlightedField={activeField}
+                                            onFieldClick={(f) => setActiveField(f)}
+                                        />
+                                    </div>
                                 </div>
-                            </>
+                            </div>
                         ) : (
-                            <div className="flex-1 flex flex-col items-center justify-center grayscale opacity-10">
-                                <Search className="w-12 h-12 mb-2 text-muted-foreground" />
-                                <h3 className="text-[10px] font-black uppercase tracking-[0.4em]">Audit Vault</h3>
+                            <div className="flex-1 flex flex-col items-center justify-center grayscale opacity-[0.03]">
+                                <Search className="w-24 h-24 mb-4 text-black" />
+                                <h3 className="text-[12px] font-black uppercase tracking-[0.5em] text-black">Verification Vault</h3>
                             </div>
                         )}
                     </div>

@@ -102,53 +102,47 @@ export default function Extract() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="h-[calc(100vh-4rem)] flex flex-col gap-2">
-        {/* Slim Top Bar - Upload Form */}
-        {!extractionResult && (
-          <UploadForm
-            schemas={schemas}
-            isLoadingSchemas={isLoadingSchemas}
-            onExtract={handleExtract}
-            isExtracting={isExtracting}
-          />
-        )}
-
-        {/* Main Content - Results Left, PDF Right */}
-        <div className="flex-1 min-h-0">
-          {extractionResult ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
-              <ResultsView
-                result={extractionResult}
-                onFieldHover={handleFieldHover}
-                onFieldClick={handleFieldClick}
-                highlightedField={activeField}
-                onPageClick={setPageNumber}
-              />
-              <PDFViewerWithBoxes
-                file={uploadedFile}
-                boundingBoxes={extractionResult.bounding_boxes}
-                highlightedField={activeField}
-                onFieldClick={handleFieldClick}
-                page={pageNumber}
-                onPageChange={setPageNumber}
-              />
+    <DashboardLayout noPadding>
+      <div className="h-screen overflow-hidden flex flex-col bg-[#F2F2F7]">
+        {/* Main Content Area */}
+        <main className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          {!extractionResult ? (
+            <div className="flex-1 flex items-center justify-center p-6">
+              <div className="w-full max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <UploadForm
+                  schemas={schemas}
+                  isLoadingSchemas={isLoadingSchemas}
+                  onExtract={handleExtract}
+                  isExtracting={isExtracting}
+                />
+              </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-full border border-dashed border-border rounded">
-              {isExtracting ? (
-                <div className="text-center">
-                  <div className="w-6 h-6 mx-auto mb-2 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" />
-                  <p className="text-sm text-foreground">Processing...</p>
+            <div className="flex-1 flex overflow-hidden scale-in">
+              <div className="w-[340px] border-r border-border/40 bg-white shadow-xl z-10 overflow-hidden flex flex-col">
+                <ResultsView
+                  result={extractionResult}
+                  onFieldHover={handleFieldHover}
+                  onFieldClick={handleFieldClick}
+                  highlightedField={activeField}
+                  onPageClick={setPageNumber}
+                />
+              </div>
+              <div className="flex-1 bg-[#8E8E93]/10 p-2 overflow-hidden flex flex-col">
+                <div className="flex-1 rounded-2xl overflow-hidden shadow-2xl ring-1 ring-black/5 bg-white">
+                  <PDFViewerWithBoxes
+                    file={uploadedFile}
+                    boundingBoxes={extractionResult.bounding_boxes}
+                    highlightedField={activeField}
+                    onFieldClick={handleFieldClick}
+                    page={pageNumber}
+                    onPageChange={setPageNumber}
+                  />
                 </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Upload documents to extract data
-                </p>
-              )}
+              </div>
             </div>
           )}
-        </div>
+        </main>
       </div>
     </DashboardLayout>
   );

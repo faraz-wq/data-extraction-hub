@@ -233,38 +233,41 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
   };
 
   return (
-    <div className="h-full flex flex-col border border-border rounded overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/30">
+    <div className="h-full flex flex-col bg-white overflow-hidden">
+      {/* iOS Style Glass Header */}
+      <div className="px-4 py-3 border-b border-border/40 bg-white/80 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between shrink-0 shadow-sm">
         <div className="flex flex-col min-w-0">
-          <h2 className="text-sm font-bold text-foreground truncate">
+          <h2 className="text-[12px] font-bold text-foreground leading-tight tracking-tight uppercase">
             {result.application_type.replace('custom:', '')}
           </h2>
-          <span className="text-[10px] text-muted-foreground font-mono truncate" title={result.session_id}>
-            ID: {result.session_id}
-          </span>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <div className="w-1 h-1 rounded-full bg-green-500" />
+            <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-tighter truncate">
+              Live Extraction Workspace
+            </span>
+          </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Button
             variant="outline"
             size="sm"
-            className="h-7 text-xs font-bold border-green-600/50 text-green-700 hover:bg-green-50"
+            className="h-7 px-3 text-[10px] font-bold border-green-500/20 text-green-700 bg-green-500/5 hover:bg-green-500/10 rounded-full transition-all"
             onClick={handleAcceptAll}
           >
-            ACCEPT ALL
+            VERIFY ALL
           </Button>
           <Button
             variant="default"
             size="sm"
-            className="h-7 text-xs font-bold"
+            className="h-7 px-4 text-[10px] font-bold bg-black hover:bg-black/90 text-white rounded-full shadow-md transition-all"
             onClick={() => setShowSummaryModal(true)}
           >
-            Complete Review
+            DONE
           </Button>
         </div>
       </div>
 
-      {/* Validation Alert Bar */}
+      {/* Modern Validation Alert Tab */}
       {(() => {
         const missingFields = Object.entries(flattenedSummary)
           .filter(([_, v]) => v === null || v === undefined || v === '' || (Array.isArray(v) && v.length === 0))
@@ -280,48 +283,31 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
         if (result.validation_summary === undefined && missingFields.length === 0 && mismatches.length === 0) return null;
 
         return (
-          <div className="bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200 dark:border-amber-900/50 shrink-0 overflow-hidden">
-            <div className="px-3 py-2 flex items-start gap-2">
-              <AlertCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-              <div className="text-[10px] leading-tight">
-                <span className="font-bold uppercase tracking-tight text-amber-700 dark:text-amber-400 mr-2">
-                  Validation Summary
+          <div className="bg-[#5856D6]/5 border-b border-[#5856D6]/10 shrink-0">
+            <div className="px-4 py-2 flex items-start gap-3">
+              <AlertCircle className="w-3.5 h-3.5 text-[#5856D6] shrink-0 mt-0.5" />
+              <div className="text-[10px] leading-snug">
+                <span className="font-bold uppercase tracking-widest text-[#5856D6] mr-2 opacity-80">
+                  Insights
                 </span>
-                <span className="text-amber-600/90 dark:text-amber-400/80 font-medium">
-                  {result.validation_summary || (
-                    <>
-                      {missingFields.length > 0 && (
-                        <span>
-                          <strong>Missing:</strong> {missingFields.join(', ')}
-                        </span>
-                      )}
-                      {missingFields.length > 0 && mismatches.length > 0 && <span className="mx-1.5 opacity-30">|</span>}
-                      {mismatches.length > 0 && (
-                        <span>
-                          <strong>Mismatches:</strong> {mismatches.join(', ')}
-                        </span>
-                      )}
-                    </>
-                  )}
+                <span className="text-black/70 font-medium">
+                  {result.validation_summary || "Automated check completed with minor remarks."}
                 </span>
               </div>
             </div>
 
             {result.errors && result.errors.length > 0 && (
-              <div className="px-3 pb-3 pt-2 border-t border-amber-200/50 bg-amber-50/50 dark:bg-amber-950/10">
-                <div className="space-y-3">
+              <div className="px-4 pb-3 pt-1">
+                <div className="space-y-2">
                   <div className="flex flex-col gap-1.5">
-                    <div className="text-[9px] font-bold text-amber-700/70 dark:text-amber-400/70 uppercase tracking-widest">
-                      Extraction Remarks
-                    </div>
-                    <ul className="space-y-1.5">
+                    <ul className="space-y-1">
                       {result.errors.map((err: any, i: number) => (
-                        <li key={i} className="text-[10px] text-amber-800/90 dark:text-amber-200/90 leading-relaxed flex items-start gap-2">
-                          <div className="w-1 h-1 rounded-full bg-amber-400 dark:bg-amber-600 mt-1.5 shrink-0" />
-                          <div>
+                        <li key={i} className="text-[9px] text-black/60 font-medium leading-relaxed flex items-center gap-2 bg-white/40 p-1.5 rounded-lg border border-[#5856D6]/5">
+                          <div className="w-1 h-1 rounded-full bg-[#5856D6] shrink-0" />
+                          <div className="truncate">
                             {typeof err === 'object' ? (
                               <>
-                                <span className="font-semibold text-amber-900 dark:text-amber-100 mr-1.5">{err.field}:</span>
+                                <span className="font-bold text-black/80 mr-1">{err.field}:</span>
                                 <span>{err.message}</span>
                               </>
                             ) : (
@@ -339,37 +325,36 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
         );
       })()}
 
-      {/* Document Map / Guide */}
+      {/* Document Map - Higher Density */}
       {result.source_documents && result.source_documents.length > 0 && (
-        <div className="px-3 py-2 border-b border-border bg-muted/10 shrink-0">
-          <div className="text-[9px] font-black uppercase text-muted-foreground/60 tracking-widest mb-1.5 flex items-center gap-1.5">
-            <Layout className="w-3 h-3" />
-            Document Map
+        <div className="px-4 py-2 bg-white border-b border-border/30 shrink-0">
+          <div className="text-[8px] font-bold uppercase text-muted-foreground/50 tracking-[0.2em] mb-2 flex items-center gap-2">
+            <Layout className="w-2.5 h-2.5 opacity-40" />
+            Evidence Sources
           </div>
           <div className="flex flex-wrap gap-1.5">
             {result.source_documents.map((doc: any, i: number) => (
               <button
                 key={i}
                 onClick={() => onPageClick?.(doc.page_numbers[0])}
-                className="px-2 py-1 rounded-md bg-white border border-border shadow-sm text-[10px] font-bold hover:border-primary hover:text-primary transition-all flex items-center gap-1.5 dark:bg-background"
+                className="px-2.5 py-1 rounded-full bg-[#F2F2F7] border border-transparent shadow-sm text-[9px] font-bold hover:bg-black hover:text-white transition-all flex items-center gap-1.5 text-black/70"
               >
-                <FileText className="w-3 h-3 opacity-50" />
+                <FileText className="w-2.5 h-2.5 opacity-50" />
                 {doc.document_title}
-                <span className="opacity-40 text-[8px] font-mono">P.{doc.page_numbers.join(',')}</span>
+                <span className="opacity-40 text-[7px] font-mono">#{doc.page_numbers[0]}</span>
               </button>
             ))}
           </div>
         </div>
       )}
 
-      {/* Fields */}
-      <ScrollArea className="flex-1">
-        <div className="p-2 space-y-1">
+      {/* Fields Explorer - iOS High Density */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar bg-white">
+        <div className="divide-y divide-border/20">
           {Object.entries(flattenedSummary).map(([key, value]) => {
             const isHighlighted = highlightedField === key;
             const isRejected = fieldStatuses[key] === 'rejected';
 
-            // Conflict Detection
             const fieldConflict = result.errors?.find((e: any) =>
               (typeof e === 'object' && e?.field === key) ||
               (typeof e === 'string' && e.includes(key))
@@ -379,259 +364,147 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
               <div
                 key={key}
                 className={cn(
-                  'p-2 rounded border transition-all duration-150 cursor-pointer relative group',
+                  'px-4 py-2 transition-all duration-300 cursor-pointer relative group',
                   isHighlighted
-                    ? 'border-purple-500 bg-purple-500/10'
+                    ? 'bg-[#5856D6]/5 border-l-2 border-[#5856D6]'
                     : isRejected
-                      ? 'border-red-500/50 bg-red-500/5'
+                      ? 'bg-red-500/[0.03] border-l-2 border-red-500'
                       : fieldConflict
-                        ? 'border-red-600/50 bg-red-600/5 shadow-[0_0_10px_-5px_red]'
-                        : 'border-border hover:border-blue-500'
+                        ? 'bg-amber-500/[0.03] border-l-2 border-amber-500'
+                        : 'hover:bg-[#F2F2F7]/40 border-l-2 border-transparent'
                 )}
                 onClick={() => onFieldClick?.(key)}
                 onMouseEnter={() => onFieldHover?.(key)}
                 onMouseLeave={() => onFieldHover?.(null)}
               >
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col space-y-0.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-[10px] font-bold text-foreground/80 tracking-tight break-all">
+                      <span className={cn(
+                        "text-[9px] font-bold uppercase tracking-tight break-all transition-colors",
+                        isHighlighted ? "text-[#5856D6]" : "text-muted-foreground/60"
+                      )}>
                         {formatFieldName(key)}
                       </span>
 
                       {fieldConflict && (
-                        <Badge variant="destructive" className="h-3.5 px-1 text-[8px] font-black uppercase tracking-tighter shrink-0 animate-pulse">
-                          Conflict Found
-                        </Badge>
+                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                       )}
-
-                      <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                        <TooltipProvider>
-                          <Popover
-                            open={activeFeedbackField === key}
-                            onOpenChange={(open) => {
-                              if (!open) setActiveFeedbackField(null);
-                            }}
-                          >
-                            <PopoverTrigger asChild>
-                              <div className="flex items-center border rounded-md px-0.5 bg-muted/20 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className={cn("h-6 w-6 rounded-sm", feedbackState[key]?.type === 'upvote' ? "text-green-600 bg-green-50" : "text-muted-foreground hover:text-green-600")}
-                                      onClick={() => handleFeedback(key, 'upvote')}
-                                    >
-                                      <ThumbsUp className="h-3 w-3" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top"><p className="text-[10px]">Quality is correct</p></TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className={cn("h-6 w-6 rounded-sm", feedbackState[key]?.type === 'downvote' ? "text-red-600 bg-red-50" : "text-muted-foreground hover:text-red-600")}
-                                      onClick={() => handleFeedback(key, 'downvote')}
-                                    >
-                                      <ThumbsDown className="h-3 w-3" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top"><p className="text-[10px]">Quality is incorrect</p></TooltipContent>
-                                </Tooltip>
-                              </div>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-72 p-0 overflow-hidden" align="start" side="bottom">
-                              <div className="bg-muted px-3 py-2 border-b">
-                                <h4 className="font-bold text-[11px] uppercase tracking-wider text-foreground">
-                                  System Feedback
-                                </h4>
-                              </div>
-                              <div className="p-3 space-y-4" onClick={(e) => e.stopPropagation()}>
-                                <div className="space-y-2">
-                                  <label className="text-[10px] font-medium text-muted-foreground uppercase">
-                                    Status
-                                  </label>
-                                  <div className="flex gap-2">
-                                    <Button
-                                      variant="outline"
-                                      className={cn(
-                                        "flex-1 h-8 text-[10px] gap-2",
-                                        feedbackState[key]?.type === 'upvote' && "bg-green-50 border-green-200 text-green-700"
-                                      )}
-                                      onClick={() => handleFeedback(key, 'upvote', feedbackText[key])}
-                                    >
-                                      <ThumbsUp className="h-3 w-3" /> Correct
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      className={cn(
-                                        "flex-1 h-8 text-[10px] gap-2",
-                                        feedbackState[key]?.type === 'downvote' && "bg-red-50 border-red-200 text-red-700"
-                                      )}
-                                      onClick={() => handleFeedback(key, 'downvote', feedbackText[key])}
-                                    >
-                                      <ThumbsDown className="h-3 w-3" /> Incorrect
-                                    </Button>
-                                  </div>
-                                </div>
-                                <Textarea
-                                  placeholder="Notes for developers..."
-                                  className="h-20 text-xs resize-none"
-                                  value={feedbackText[key] || ''}
-                                  onChange={(e) => setFeedbackText(prev => ({ ...prev, [key]: e.target.value }))}
-                                />
-                                <div className="flex justify-end gap-2">
-                                  <Button size="sm" className="h-8 text-xs px-4" onClick={() => setActiveFeedbackField(null)}>
-                                    Done
-                                  </Button>
-                                </div>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                        </TooltipProvider>
-                      </div>
-
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-4 px-1 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          copyToClipboard(renderValue(value));
-                        }}
-                      >
-                        Copy
-                      </Button>
                     </div>
 
-                    <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                      <TooltipProvider>
-                        <div className="flex items-center gap-1">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className={cn(
-                                  "h-auto p-0 text-xs font-black transition-all hover:bg-transparent",
-                                  isRejected
-                                    ? "text-red-700 underline underline-offset-2 decoration-2"
-                                    : "text-red-600 hover:text-red-700"
-                                )}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleIssue(key);
-                                }}
-                              >
-                                {isRejected ? 'Rejected' : 'Reject'}
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">
-                              <p className="text-[10px] font-bold">{isRejected ? 'Remove rejection' : 'Mark field as rejected'}</p>
-                            </TooltipContent>
-                          </Tooltip>
-
-                          {feedbackState[key]?.text && (
-                            <MessageSquare className="h-3 w-3 text-purple-500 fill-current opacity-70" />
-                          )}
-                        </div>
-                      </TooltipProvider>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        className="h-4 px-1.5 text-[8px] font-bold hover:text-black text-muted-foreground/40 transition-colors uppercase"
+                        onClick={() => copyToClipboard(renderValue(value))}
+                      >
+                        Copy
+                      </button>
+                      <button
+                        className={cn(
+                          "h-4 px-1.5 text-[8px] font-bold transition-colors uppercase rounded-md",
+                          isRejected ? "bg-red-500 text-white" : "hover:text-red-500 text-muted-foreground/40"
+                        )}
+                        onClick={() => toggleIssue(key)}
+                      >
+                        {isRejected ? 'Flagged' : 'Flag'}
+                      </button>
                     </div>
                   </div>
 
-                  <div className="text-sm font-medium text-foreground break-words">
+                  <div className={cn(
+                    "text-[11px] font-bold break-words leading-tight tracking-tight",
+                    isHighlighted ? "text-black" : "text-foreground"
+                  )}>
                     {renderValue(value)}
                   </div>
 
-                  {fieldConflict && (
-                    <div className="mt-1 p-1.5 rounded-md bg-red-100 dark:bg-red-950/40 text-[9px] text-red-700 dark:text-red-200 font-medium border border-red-200/50 dark:border-red-800/50 leading-snug">
-                      <span className="font-bold">AI Remark:</span> {typeof fieldConflict === 'object' ? fieldConflict.message : fieldConflict}
+                  {fieldConflict && isHighlighted && (
+                    <div className="mt-1.5 p-2 rounded-xl bg-amber-500/10 text-[9px] text-amber-700 font-bold border border-amber-500/10 leading-snug animate-in fade-in slide-in-from-top-1">
+                      {typeof fieldConflict === 'object' ? fieldConflict.message : fieldConflict}
                     </div>
                   )}
 
-                  {renderCitation(key)}
+                  <div className="opacity-60 transition-opacity">
+                    {renderCitation(key)}
+                  </div>
                 </div>
               </div>
             );
           })}
-
-          <div className="pt-4 pb-2">
-            <Button variant="outline" className="w-full h-10 text-sm" asChild>
-              <Link to={`/sessions/${result.session_id}`}>View Full Session Details</Link>
-            </Button>
-          </div>
         </div>
-      </ScrollArea>
-
-      {/* Footer */}
-      <div className="px-2 py-1 border-t border-border text-[10px] text-muted-foreground flex justify-between">
-        <span>{Object.keys(flattenedSummary).length} fields</span>
-        <span>
-          {result.source_documents ? result.source_documents.length : (result as any).documents?.length || 0} docs
-        </span>
+        <div className="h-10" />
       </div>
 
-      {/* Summary Modal */}
-      <Dialog open={showSummaryModal} onOpenChange={setShowSummaryModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Check className="w-5 h-5 text-green-500" />
-              Review Complete
-            </DialogTitle>
-            <DialogDescription>
-              Summary of your review for <strong>{result.application_type.replace('custom:', '')}</strong>.
-            </DialogDescription>
-          </DialogHeader>
+      {/* Modern Slim Meta Footer */}
+      <div className="px-4 py-2 border-t border-border/30 text-[9px] font-bold text-muted-foreground/40 bg-white flex justify-between uppercase tracking-widest shrink-0">
+        <div className="flex items-center gap-3">
+          <span>{Object.keys(flattenedSummary).length} Facts</span>
+          <span className="opacity-30">/</span>
+          <span>{result.source_documents?.length || 0} Evidence</span>
+        </div>
+        <Link to={`/sessions/${result.session_id}`} className="hover:text-black transition-colors">
+          View Detail ›
+        </Link>
+      </div>
 
-          <div className="py-6 space-y-4">
-            <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-xl font-bold text-red-600 dark:text-red-400">
+      {/* Summary Modal - Clean iOS Style */}
+      <Dialog open={showSummaryModal} onOpenChange={setShowSummaryModal}>
+        <DialogContent className="sm:max-w-md rounded-3xl border-none shadow-3xl bg-white p-0 overflow-hidden">
+          <div className="p-8 space-y-6 text-center">
+            <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-2">
+              <Check className="w-8 h-8 text-green-600" />
+            </div>
+
+            <div className="space-y-2">
+              <DialogHeader className="text-center">
+                <DialogTitle className="text-2xl font-black tracking-tight text-center">Review Ready</DialogTitle>
+                <DialogDescription className="text-center text-sm font-medium">
+                  Review complete for {result.application_type.replace('custom:', '')}.
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-[#F2F2F7] border border-black/5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest leading-none">Flagged Issues</span>
+                <span className="text-xl font-black text-red-500 leading-none">
                   {Object.values(fieldStatuses).filter(s => s === 'rejected').length}
-                </div>
-                <div className="text-[10px] text-red-600/80 dark:text-red-400/80 uppercase font-bold tracking-wider">
-                  Issues Flagged
-                </div>
+                </span>
               </div>
 
-              {Object.entries(fieldStatuses).filter(([_, s]) => s === 'rejected').length > 0 ? (
-                <div className="mt-4 space-y-1 max-h-40 overflow-y-auto pr-2">
+              {Object.entries(fieldStatuses).filter(([_, s]) => s === 'rejected').length > 0 && (
+                <div className="mt-4 space-y-1 max-h-32 overflow-y-auto px-1 custom-scrollbar">
                   {Object.entries(fieldStatuses)
                     .filter(([_, s]) => s === 'rejected')
                     .map(([fieldName]) => (
-                      <div key={fieldName} className="text-[11px] font-mono text-red-600/90 dark:text-red-400/90 bg-red-500/5 px-2 py-1 rounded border border-red-500/10">
-                        • {fieldName}
+                      <div key={fieldName} className="text-[10px] font-bold text-red-500 uppercase tracking-tight text-left truncate bg-white/50 px-2 py-1 rounded-md border border-red-500/10">
+                        • {fieldName.replace(/_/g, ' ')}
                       </div>
                     ))
                   }
                 </div>
-              ) : (
-                <div className="text-sm text-green-600 dark:text-green-400 font-medium py-2">
-                  No issues flagged. Everything looks correct!
-                </div>
               )}
             </div>
 
-            <div className="text-sm text-muted-foreground bg-muted p-3 rounded italic text-center">
-              A record of these flags will be saved for further review.
+            <div className="flex flex-col gap-2 pt-2">
+              <Button
+                className="w-full h-12 rounded-2xl bg-black hover:bg-black/90 text-white font-bold text-sm shadow-xl shadow-black/10"
+                onClick={() => {
+                  setShowSummaryModal(false);
+                  toast({ title: "Review Submitted", description: "Record successfully updated." });
+                }}
+              >
+                Submit Extraction
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full h-10 rounded-xl text-xs font-bold text-muted-foreground hover:bg-black/5"
+                onClick={() => setShowSummaryModal(false)}
+              >
+                Continue Editing
+              </Button>
             </div>
           </div>
-
-          <DialogFooter className="sm:justify-end">
-            <Button variant="outline" onClick={() => setShowSummaryModal(false)}>
-              Keep Editing
-            </Button>
-            <Button onClick={() => {
-              setShowSummaryModal(false);
-              toast({ title: "Review Submitted", description: "Document issues have been logged." });
-            }}>
-              Submit Review
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

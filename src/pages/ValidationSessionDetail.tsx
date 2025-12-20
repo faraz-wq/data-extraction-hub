@@ -227,285 +227,215 @@ export default function ValidationSessionDetail() {
     const extraction = session.extraction_summary;
 
     return (
-        <DashboardLayout>
-            <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-700">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                    <div className="space-y-4">
-                        <Button asChild variant="ghost" size="sm" className="-ml-2 text-muted-foreground hover:text-primary">
+        <DashboardLayout noPadding>
+            <div className="h-screen flex flex-col bg-[#F2F2F7] overflow-hidden">
+                {/* Header - iOS Glass Style */}
+                <header className="px-6 py-4 border-b border-border/40 bg-white/80 backdrop-blur-md z-20 flex items-center justify-between shrink-0 shadow-sm">
+                    <div className="flex items-center gap-4">
+                        <Button asChild variant="ghost" size="icon" className="rounded-full hover:bg-black/5 -ml-2">
                             <Link to="/validate/sessions">
-                                <ArrowLeft className="w-4 h-4 mr-2" />
-                                Back to History
+                                <ArrowLeft className="w-4 h-4" />
                             </Link>
                         </Button>
-                        <div className="space-y-1">
-                            <div className="flex items-center gap-2 text-primary">
-                                <Layout className="w-5 h-5" />
-                                <span className="text-sm font-bold tracking-widest uppercase">Audit Result</span>
+                        <div className="flex flex-col min-w-0">
+                            <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="h-4 text-[8px] font-black border-black/5 uppercase px-1.5 bg-white/50">
+                                    Audit Session
+                                </Badge>
+                                <span className="text-[10px] text-muted-foreground font-mono opacity-50">
+                                    {session.report_id}
+                                </span>
                             </div>
-                            <h1 className="text-4xl font-black text-foreground tracking-tight">
+                            <h1 className="text-lg font-black text-foreground tracking-tight truncate max-w-[400px]">
                                 {session.application_type}
                             </h1>
-                            <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground font-medium">
-                                <div className="flex items-center gap-1.5">
-                                    <Calendar className="w-4 h-4 opacity-50" />
-                                    <span>{new Date(session.created_at).toLocaleString()}</span>
-                                </div>
-                                <span>·</span>
-                                <div className="flex items-center gap-1.5">
-                                    <Database className="w-4 h-4 opacity-50" />
-                                    <span className="font-mono text-[10px]">{session.validation_id}</span>
-                                </div>
-                            </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <Button variant="outline" size="sm" className="rounded-full" onClick={() => window.print()}>
-                            <Download className="w-4 h-4 mr-2" />
-                            Download Report
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" className="h-8 rounded-full text-[10px] font-bold border-black/5 bg-white shadow-sm" onClick={() => window.print()}>
+                            <Download className="w-3.5 h-3.5 mr-2" />
+                            EXPORT PDF
                         </Button>
-                        <Button variant="destructive" size="sm" className="rounded-full" onClick={handleDelete}>
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
+                        <Button variant="destructive" size="sm" className="h-8 rounded-full text-[10px] font-bold shadow-lg shadow-red-500/10" onClick={handleDelete}>
+                            <Trash2 className="w-3.5 h-3.5 mr-2" />
+                            REMOVE
                         </Button>
                     </div>
-                </div>
+                </header>
 
-                {/* Status Banner */}
-                {getStatusBanner()}
+                {/* Main Content Area */}
+                <main className="flex-1 min-h-0 flex overflow-hidden">
+                    {/* Sidebar Navigator */}
+                    <aside className="w-[320px] border-r border-border/40 bg-white shadow-xl z-10 flex flex-col">
+                        <div className="p-4 border-b border-border/40 bg-muted/10">
+                            {getStatusBanner()}
+                        </div>
 
-                {/* Main Interface */}
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
+                        <div className="p-4 py-2 border-b border-border/20">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60">Audit Intelligence</span>
+                                <Badge className="bg-[#5856D6] text-white text-[9px] font-black rounded-full h-4">
+                                    {(session.confidence_score * 100).toFixed(0)}% Match
+                                </Badge>
+                            </div>
+                        </div>
 
-                    {/* LEFT: Stats & Navigation */}
-                    <div className="lg:col-span-1 space-y-6">
-                        {/* Stats Card */}
-                        <Card className="border-border/50 bg-background/40 backdrop-blur-xl shadow-xl overflow-hidden ring-1 ring-white/10">
-                            <CardHeader className="bg-muted/30 border-b border-border/50 pb-4">
-                                <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Audit Stats</CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-6 space-y-6">
-                                <div>
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-xs font-bold text-muted-foreground uppercase">Confidence</span>
-                                        <span className={cn(
-                                            "text-sm font-black",
-                                            session.confidence_score >= 0.9 ? "text-green-500" :
-                                                session.confidence_score >= 0.7 ? "text-amber-500" : "text-red-500"
-                                        )}>
-                                            {(session.confidence_score * 100).toFixed(0)}%
-                                        </span>
-                                    </div>
-                                    <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                                        <div
-                                            className={cn(
-                                                "h-full transition-all duration-1000",
-                                                session.confidence_score >= 0.9 ? "bg-green-500" :
-                                                    session.confidence_score >= 0.7 ? "bg-amber-500" : "bg-red-500"
-                                            )}
-                                            style={{ width: `${session.confidence_score * 100}%` }}
-                                        />
-                                    </div>
-                                </div>
+                        <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-border/20">
+                            {Object.keys(extraction || {}).filter(key => !key.startsWith('_') && !['bounding_boxes', 'citations', 'source_documents'].includes(key)).map((key) => {
+                                const issues = report.issues.filter((i: any) => i.field === key || (Array.isArray(i.field) && i.field.includes(key)));
+                                const hasIssue = issues.length > 0;
+                                const severity = hasIssue ? issues[0].severity : null;
 
-                                <div className="grid grid-cols-3 gap-2">
-                                    <div className="text-center p-3 bg-red-500/10 rounded-2xl border border-red-500/20">
-                                        <div className="text-xl font-black text-red-500">{session.error_count}</div>
-                                        <div className="text-[8px] font-black uppercase text-red-500/70 tracking-tighter">Errors</div>
-                                    </div>
-                                    <div className="text-center p-3 bg-amber-500/10 rounded-2xl border border-amber-500/20">
-                                        <div className="text-xl font-black text-amber-500">{session.warning_count}</div>
-                                        <div className="text-[8px] font-black uppercase text-amber-500/70 tracking-tighter">Warnings</div>
-                                    </div>
-                                    <div className="text-center p-3 bg-blue-500/10 rounded-2xl border border-blue-500/20">
-                                        <div className="text-xl font-black text-blue-500">{session.info_count}</div>
-                                        <div className="text-[8px] font-black uppercase text-blue-500/70 tracking-tighter">Info</div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Field Navigator */}
-                        <Card className="border-border/50 bg-background/40 backdrop-blur-xl shadow-xl overflow-hidden ring-1 ring-white/10">
-                            <CardHeader className="bg-muted/30 border-b border-border/50 pb-4">
-                                <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Field Navigator</CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-0 max-h-[400px] overflow-y-auto">
-                                <div className="divide-y divide-border/30">
-                                    {Object.keys(extraction || {}).filter(key => !key.startsWith('_') && !['bounding_boxes', 'citations', 'source_documents'].includes(key)).map((key) => {
-                                        const hasIssue = report.issues.some((i: any) => i.field === key || (Array.isArray(i.field) && i.field.includes(key)));
-                                        const severity = hasIssue ? report.issues.find((i: any) => i.field === key || (Array.isArray(i.field) && i.field.includes(key)))?.severity : null;
-
-                                        return (
-                                            <button
-                                                key={key}
-                                                onClick={() => handleFieldClick(key)}
-                                                className={cn(
-                                                    "w-full flex items-center justify-between p-4 text-left transition-all hover:bg-muted/50",
-                                                    activeField === key ? "bg-primary/10 ring-1 ring-inset ring-primary/20" : ""
-                                                )}
-                                            >
-                                                <div className="min-w-0 pr-2">
-                                                    <p className={cn(
-                                                        "text-xs font-bold uppercase tracking-tight truncate",
-                                                        activeField === key ? "text-primary" : "text-foreground"
-                                                    )}>
-                                                        {key.replace(/_/g, ' ')}
-                                                    </p>
-                                                    <p className="text-[10px] text-muted-foreground truncate opacity-70">
-                                                        {JSON.stringify(extraction[key]).slice(0, 40)}
-                                                    </p>
-                                                </div>
+                                return (
+                                    <button
+                                        key={key}
+                                        onClick={() => handleFieldClick(key)}
+                                        className={cn(
+                                            "w-full flex items-start gap-3 p-4 text-left transition-all relative overflow-hidden group",
+                                            activeField === key ? "bg-[#5856D6]/5" : "hover:bg-[#F2F2F7]/40"
+                                        )}
+                                    >
+                                        {activeField === key && (
+                                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#5856D6]" />
+                                        )}
+                                        <div className="flex-1 min-w-0 space-y-1">
+                                            <div className="flex items-center justify-between">
+                                                <span className={cn(
+                                                    "text-[9px] font-black uppercase tracking-tight truncate",
+                                                    activeField === key ? "text-[#5856D6]" : "text-muted-foreground/60"
+                                                )}>
+                                                    {key.replace(/_/g, ' ')}
+                                                </span>
                                                 {hasIssue && (
                                                     <div className={cn(
-                                                        "w-2 h-2 rounded-full ring-4 shadow-lg",
-                                                        severity === 'error' ? "bg-red-500 ring-red-500/20 shadow-red-500/30" :
-                                                            severity === 'warning' ? "bg-amber-500 ring-amber-500/20 shadow-amber-500/30" :
-                                                                "bg-blue-500 ring-blue-500/20 shadow-blue-500/30"
+                                                        "w-1.5 h-1.5 rounded-full",
+                                                        severity === 'error' ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" :
+                                                            severity === 'warning' ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" :
+                                                                "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"
                                                     )} />
                                                 )}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
+                                            </div>
+                                            <p className={cn(
+                                                "text-[11px] font-bold truncate leading-tight transition-colors",
+                                                activeField === key ? "text-black" : "text-foreground"
+                                            )}>
+                                                {String(extraction[key])}
+                                            </p>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </aside>
 
-                    {/* MIDDLE/RIGHT: Data & Issues */}
-                    <div className="lg:col-span-3 space-y-8">
-
-                        {/* Field Details */}
-                        {activeField && (
-                            <Card className="border-border/50 bg-background/40 backdrop-blur-xl shadow-2xl overflow-hidden ring-1 ring-white/10 animate-in fade-in slide-in-from-top-4 duration-500">
-                                <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent border-b border-border/50 py-4">
-                                    <div className="flex items-center justify-between">
-                                        <CardTitle className="text-sm font-black uppercase tracking-widest text-primary">
-                                            {activeField.replace(/_/g, ' ')}
-                                        </CardTitle>
-                                        <Badge variant="outline" className="text-[10px] font-black uppercase font-mono tracking-tighter">
-                                            Field Detail
-                                        </Badge>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="p-8">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    {/* Content Panel */}
+                    <div className="flex-1 flex flex-col overflow-hidden bg-[#8E8E93]/10 p-4">
+                        <div className="flex-1 glass-card rounded-3xl border border-white/40 shadow-2xl overflow-hidden flex flex-col bg-white">
+                            {activeField ? (
+                                <div className="flex-1 overflow-y-auto custom-scrollbar p-10">
+                                    <div className="max-w-3xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                                        {/* Field Identity */}
                                         <div className="space-y-6">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Extracted Value</label>
-                                                <div className="p-6 bg-muted/20 border border-border/50 rounded-3xl text-lg font-medium shadow-inner">
-                                                    {renderFieldValue(extraction[activeField])}
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-2xl bg-[#5856D6]/10 flex items-center justify-center">
+                                                    <Target className="w-6 h-6 text-[#5856D6]" />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest text-[#5856D6] bg-[#5856D6]/5 border-[#5856D6]/10">
+                                                        Deep Audit Target
+                                                    </Badge>
+                                                    <h2 className="text-3xl font-black text-foreground tracking-tight uppercase">
+                                                        {activeField.replace(/_/g, ' ')}
+                                                    </h2>
                                                 </div>
                                             </div>
 
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Source Citation</label>
-                                                <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl flex items-start gap-3">
-                                                    <FileText className="w-5 h-5 text-primary mt-0.5" />
-                                                    <p className="text-sm text-foreground/80 italic font-medium leading-relaxed">
-                                                        "{extraction._citations?.[activeField] || "No citation available for this field."}"
-                                                    </p>
+                                            <div className="p-8 bg-muted/5 border border-border/40 rounded-3xl shadow-inner-lg">
+                                                <div className="text-[10px] font-black uppercase text-muted-foreground/50 tracking-[0.2em] mb-4">Verification Artifact</div>
+                                                <div className="text-2xl font-medium text-foreground leading-tight">
+                                                    {renderFieldValue(extraction[activeField])}
                                                 </div>
                                             </div>
                                         </div>
 
+                                        {/* Verification Results */}
                                         <div className="space-y-6">
-                                            <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Validation Analysis</label>
-                                            <div className="space-y-3">
+                                            <div className="text-[10px] font-black uppercase text-muted-foreground/50 tracking-[0.2em] flex items-center gap-2">
+                                                <Database className="w-3 h-3 opacity-40" />
+                                                Validation Logic Analysis
+                                            </div>
+
+                                            <div className="space-y-4">
                                                 {report.issues.filter((i: any) => i.field === activeField || (Array.isArray(i.field) && i.field.includes(activeField))).length > 0 ? (
                                                     report.issues.filter((i: any) => i.field === activeField || (Array.isArray(i.field) && i.field.includes(activeField))).map((issue: any, idx: number) => (
                                                         <div key={idx} className={cn(
-                                                            "p-5 rounded-3xl border flex items-start gap-4",
-                                                            issue.severity === 'error' ? "bg-red-500/10 border-red-500/20" :
-                                                                issue.severity === 'warning' ? "bg-amber-500/10 border-amber-500/20" :
-                                                                    "bg-blue-500/10 border-blue-500/20"
+                                                            "p-6 rounded-3xl border shadow-xl transition-all hover:scale-[1.01]",
+                                                            issue.severity === 'error' ? "bg-red-50 border-red-200/50 shadow-red-500/[0.03]" :
+                                                                issue.severity === 'warning' ? "bg-amber-50 border-amber-200/50 shadow-amber-500/[0.03]" :
+                                                                    "bg-blue-50 border-blue-200/50 shadow-blue-500/[0.03]"
                                                         )}>
-                                                            <div className="mt-1">{getSeverityIcon(issue.severity)}</div>
-                                                            <div className="space-y-1">
-                                                                <p className="text-sm font-black uppercase tracking-tight">{issue.message}</p>
-                                                                {issue.expected_value && (
-                                                                    <p className="text-xs font-medium opacity-80">
-                                                                        Expected: <span className="font-bold underline">{JSON.stringify(issue.expected_value)}</span>
-                                                                    </p>
-                                                                )}
+                                                            <div className="flex items-start gap-4">
+                                                                <div className="p-2 bg-white rounded-xl shadow-sm border border-black/[0.03] mt-0.5">
+                                                                    {getSeverityIcon(issue.severity)}
+                                                                </div>
+                                                                <div className="space-y-2 flex-1">
+                                                                    <div className="flex items-center justify-between">
+                                                                        <span className={cn(
+                                                                            "text-[10px] font-black uppercase tracking-widest",
+                                                                            issue.severity === 'error' ? "text-red-700" :
+                                                                                issue.severity === 'warning' ? "text-amber-700" :
+                                                                                    "text-blue-700"
+                                                                        )}>
+                                                                            {issue.severity.toUpperCase()} ALERT
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className="text-base font-bold text-foreground leading-snug">{issue.message}</p>
+                                                                    {issue.expected_value && (
+                                                                        <div className="mt-3 p-3 bg-white/60 rounded-xl border border-black/[0.03] inline-block">
+                                                                            <span className="text-[10px] font-bold text-muted-foreground block mb-1">REFERENCE BENCHMARK:</span>
+                                                                            <span className="font-mono text-xs font-bold">{JSON.stringify(issue.expected_value)}</span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     ))
                                                 ) : (
-                                                    <div className="p-8 text-center bg-green-500/5 border border-green-500/10 rounded-3xl space-y-3">
-                                                        <CheckCircle2 className="w-10 h-10 text-green-500/30 mx-auto" />
-                                                        <p className="text-sm font-bold text-green-500/70 uppercase">No issues found for this field</p>
+                                                    <div className="p-12 text-center bg-green-500/[0.03] border border-green-500/10 rounded-3xl space-y-4">
+                                                        <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto border border-green-500/10">
+                                                            <CheckCircle2 className="w-8 h-8 text-green-600" />
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <h4 className="text-lg font-black text-green-600 uppercase tracking-tight">Verified Fact</h4>
+                                                            <p className="text-sm font-medium text-green-600/60 max-w-xs mx-auto">This artifact passed all automated verification protocols with high confidence.</p>
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
                                         </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )}
 
-                        {/* Overall Issues List */}
-                        <Card className="border-border/50 bg-background/40 backdrop-blur-xl shadow-xl overflow-hidden ring-1 ring-white/10">
-                            <CardHeader className="bg-muted/30 border-b border-border/50 pb-4">
-                                <div className="flex items-center justify-between">
-                                    <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">All Validation Issues</CardTitle>
-                                    <Badge variant="outline" className="rounded-full px-3">{report.issues.length} Issues</Badge>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="p-0">
-                                {report.issues.length === 0 ? (
-                                    <div className="p-12 text-center text-muted-foreground font-medium">
-                                        <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-4 opacity-20" />
-                                        No issues identified in this validation.
-                                    </div>
-                                ) : (
-                                    <div className="divide-y divide-border/30">
-                                        {report.issues.map((issue: any, index: number) => (
-                                            <button
-                                                key={index}
-                                                onClick={() => issue.field && handleFieldClick(Array.isArray(issue.field) ? issue.field[0] : issue.field)}
-                                                className="w-full text-left p-6 hover:bg-muted/30 transition-all flex items-start gap-4"
-                                            >
-                                                <div className="mt-1">{getSeverityIcon(issue.severity)}</div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className="text-[10px] font-black uppercase text-primary tracking-widest">{issue.field || "System"}</span>
-                                                        <Badge variant="outline" className="text-[8px] font-black leading-none py-0.5">{issue.severity}</Badge>
-                                                    </div>
-                                                    <p className="font-bold text-foreground leading-snug">{issue.message}</p>
-                                                </div>
-                                                <ChevronRight className="w-4 h-4 text-muted-foreground opacity-30 mt-1" />
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        {/* Extraction Data Tree */}
-                        <Card className="border-border/50 bg-background/40 backdrop-blur-xl shadow-xl overflow-hidden ring-1 ring-white/10">
-                            <CardHeader className="bg-muted/30 border-b border-border/50 pb-4">
-                                <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Extracted Data Tree</CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-8">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                                    {Object.entries(extraction || {}).filter(([key]) => !key.startsWith('_') && !['bounding_boxes', 'citations', 'source_documents'].includes(key)).map(([key, value]) => (
-                                        <div key={key} className="space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">{key.replace(/_/g, ' ')}</span>
+                                        {/* Source Citation */}
+                                        <div className="space-y-4 opacity-80">
+                                            <div className="text-[10px] font-black uppercase text-muted-foreground/50 tracking-[0.2em] flex items-center gap-2">
+                                                <FileText className="w-3 h-3 opacity-40" />
+                                                Cited Origin
                                             </div>
-                                            <div className="p-4 bg-muted/20 border border-border/50 rounded-2xl shadow-sm">
-                                                {renderFieldValue(value)}
+                                            <div className="p-6 bg-muted/5 border border-border/30 rounded-2xl italic font-medium text-sm text-foreground/80 leading-relaxed shadow-sm">
+                                                "{extraction._citations?.[activeField] || "System verified metadata from encrypted source documents."}"
                                             </div>
                                         </div>
-                                    ))}
+                                    </div>
                                 </div>
-                            </CardContent>
-                        </Card>
-
+                            ) : (
+                                <div className="flex-1 flex flex-col items-center justify-center grayscale opacity-10">
+                                    <Database className="w-32 h-32 mb-6" />
+                                    <h3 className="text-xl font-black uppercase tracking-[0.5em]">Select Objective</h3>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
+                </main>
             </div>
         </DashboardLayout>
     );

@@ -30,6 +30,7 @@ export function PDFViewerWithBoxes({
   const [scale, setScale] = useState(1.0);
   const [pageWidth, setPageWidth] = useState(0);
   const [pageHeight, setPageHeight] = useState(0);
+  const [activeBoxIndex, setActiveBoxIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const memoizedFile = useMemo(() => {
@@ -113,18 +114,25 @@ export function PDFViewerWithBoxes({
     });
   }, [boundingBoxes, pageWidth, pageHeight]);
 
+  const allHighlightBoxes = useMemo(() =>
+    boxes.filter(box => box.field === highlightedField),
+    [boxes, highlightedField]);
+
   const currentPageBoxes = boxes.filter(box => box.page === currentPage && box.field === highlightedField);
 
   useEffect(() => {
-    if (highlightedField) {
-      const box = boxes.find(b => b.field === highlightedField);
+    setActiveBoxIndex(0);
+  }, [highlightedField]);
+
+  useEffect(() => {
+    if (highlightedField && allHighlightBoxes.length > 0) {
+      const box = allHighlightBoxes[activeBoxIndex];
       if (box && box.page !== currentPage) {
         handlePageChange(box.page);
       }
     }
-    // Only trigger when highlightedField changes, NOT when currentPage changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [highlightedField]);
+  }, [highlightedField, activeBoxIndex]);
 
   if (!file) {
     return (
@@ -135,31 +143,58 @@ export function PDFViewerWithBoxes({
   }
 
   return (
-    <div className="h-full flex flex-col border border-border rounded overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-2 py-1 border-b border-border text-xs">
-        <span className="text-muted-foreground">Preview</span>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={zoomOut}>−</Button>
-          <span className="text-muted-foreground w-10 text-center">{Math.round(scale * 100)}%</span>
-          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={zoomIn}>+</Button>
+    <div className="h-full flex flex-col bg-white overflow-hidden">
+      {/* Header - Minimalist */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border/30 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 bg-white/50 backdrop-blur-sm z-10 shrink-0">
+        <div className="flex items-center gap-4">
+          <span>Document Preview</span>
+          {allHighlightBoxes.length > 1 && (
+            <div className="flex items-center gap-2 bg-[#5856D6]/10 text-[#5856D6] px-2 py-0.5 rounded-full border border-[#5856D6]/10 animate-in fade-in slide-in-from-left-2">
+              <span className="opacity-70 text-[8px]">Occurrences</span>
+              <div className="flex items-center gap-1.5 border-l border-[#5856D6]/20 pl-2 ml-0.5">
+                <button
+                  className="hover:text-black transition-colors disabled:opacity-30"
+                  onClick={() => setActiveBoxIndex(prev => Math.max(0, prev - 1))}
+                  disabled={activeBoxIndex === 0}
+                >
+                  ←
+                </button>
+                <span className="min-w-[20px] text-center tabular-nums">{activeBoxIndex + 1} / {allHighlightBoxes.length}</span>
+                <button
+                  className="hover:text-black transition-colors disabled:opacity-30"
+                  onClick={() => setActiveBoxIndex(prev => Math.min(allHighlightBoxes.length - 1, prev + 1))}
+                  disabled={activeBoxIndex === allHighlightBoxes.length - 1}
+                >
+                  →
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2 bg-muted/30 px-2 py-1 rounded-full">
+          <button className="hover:text-black transition-colors px-1" onClick={zoomOut}>−</button>
+          <span className="w-8 text-center tabular-nums">{Math.round(scale * 100)}%</span>
+          <button className="hover:text-black transition-colors px-1" onClick={zoomIn}>+</button>
         </div>
       </div>
 
-      {/* PDF Container */}
-      <div ref={containerRef} className="flex-1 overflow-auto bg-secondary/20 flex items-start justify-center p-2">
-        <div className="relative inline-block">
+      {/* PDF Container - Ensures full height and scrollable area */}
+      <div
+        ref={containerRef}
+        className="flex-1 overflow-auto bg-[#8E8E93]/5 flex items-start justify-center p-4 custom-scrollbar"
+      >
+        <div className="relative inline-block shadow-2xl ring-1 ring-black/5 rounded-sm overflow-hidden mb-8">
           <Document
             file={memoizedFile}
             onLoadSuccess={onDocumentLoadSuccess}
             loading={
-              <div className="flex items-center justify-center h-48">
-                <div className="w-5 h-5 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" />
+              <div className="flex items-center justify-center p-20">
+                <div className="w-8 h-8 border-2 border-black/10 border-t-black rounded-full animate-spin" />
               </div>
             }
             error={
-              <div className="flex items-center justify-center h-48 text-destructive">
-                <p className="text-xs">Failed to load</p>
+              <div className="flex items-center justify-center p-20 text-red-500">
+                <p className="text-xs font-bold uppercase tracking-tight">Load Failed</p>
               </div>
             }
           >
@@ -169,23 +204,26 @@ export function PDFViewerWithBoxes({
               onLoadSuccess={onPageLoadSuccess}
               renderTextLayer={true}
               renderAnnotationLayer={true}
+              className="bg-white"
             />
           </Document>
 
-          {/* Bounding Box Overlays - Blue default, Purple highlighted */}
+          {/* Bounding Box Overlays - iOS Indigo Style */}
           {currentPageBoxes.map((box) => {
             const isHighlighted = highlightedField === box.field;
-            const globalIndex = boxes.findIndex(b => b.field === box.field);
-            const fieldNumber = globalIndex + 1;
+            // Find if this box is the globally active one
+            const isActive = allHighlightBoxes[activeBoxIndex] === box;
 
             return (
               <div
                 key={`${box.field}-${box.index}`}
                 className={cn(
-                  'absolute border-2 transition-all duration-200 cursor-pointer rounded-sm',
-                  isHighlighted
-                    ? 'border-purple-500 bg-purple-500/20 z-20'
-                    : 'border-blue-500 bg-blue-500/10 hover:bg-blue-500/20 z-10'
+                  'absolute border-2 transition-all duration-300 cursor-pointer rounded-sm shadow-sm',
+                  isActive
+                    ? 'border-[#5856D6] bg-[#5856D6]/20 z-30 scale-[1.02] shadow-[0_0_15px_rgba(88,86,214,0.3)]'
+                    : isHighlighted
+                      ? 'border-[#5856D6]/60 bg-[#5856D6]/10 z-20 opacity-60'
+                      : 'border-[#5856D6]/40 bg-[#5856D6]/5 hover:bg-[#5856D6]/10 z-10'
                 )}
                 style={{
                   left: `${box.x * scale}px`,
@@ -194,14 +232,17 @@ export function PDFViewerWithBoxes({
                   height: `${box.height * scale}px`,
                 }}
                 onClick={() => onFieldClick?.(box.field)}
-                title={`${fieldNumber}. ${box.field}`}
               >
-
-
-                {isHighlighted && (
-                  <span className="absolute -top-6 left-3 px-1 py-0.5 bg-purple-500 text-white text-[10px] rounded whitespace-nowrap z-30">
-                    {box.field.replace(/_/g, ' ')}
-                  </span>
+                {isActive && (
+                  <div className="absolute -top-6 left-0 flex items-center gap-1.5 px-2 py-1 bg-[#5856D6] text-white text-[9px] font-bold rounded-md shadow-lg whitespace-nowrap z-30 animate-in fade-in zoom-in duration-200">
+                    <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
+                    {box.field.replace(/_/g, ' ').toUpperCase()}
+                    {allHighlightBoxes.length > 1 && (
+                      <span className="opacity-60 border-l border-white/20 pl-1.5 ml-0.5">
+                        {activeBoxIndex + 1} OF {allHighlightBoxes.length}
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
             );
@@ -209,16 +250,26 @@ export function PDFViewerWithBoxes({
         </div>
       </div>
 
-      {/* Pagination */}
+      {/* Pagination - Minimalist Bottom Bar */}
       {numPages > 1 && (
-        <div className="flex items-center justify-center gap-2 px-2 py-1 border-t border-border text-xs">
-          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={goToPrevPage} disabled={currentPage <= 1}>
-            Prev
-          </Button>
-          <span className="text-muted-foreground">{currentPage}/{numPages}</span>
-          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={goToNextPage} disabled={currentPage >= numPages}>
-            Next
-          </Button>
+        <div className="flex items-center justify-center gap-4 px-4 py-2 border-t border-border/30 text-[10px] font-black tracking-widest text-muted-foreground/60 bg-white shrink-0">
+          <button
+            className="hover:text-black transition-colors disabled:opacity-20 flex items-center gap-1"
+            onClick={goToPrevPage}
+            disabled={currentPage <= 1}
+          >
+            PREV
+          </button>
+          <div className="bg-muted/30 px-3 py-1 rounded-full tabular-nums">
+            {currentPage} <span className="opacity-20 mx-1">/</span> {numPages}
+          </div>
+          <button
+            className="hover:text-black transition-colors disabled:opacity-20 flex items-center gap-1"
+            onClick={goToNextPage}
+            disabled={currentPage >= numPages}
+          >
+            NEXT
+          </button>
         </div>
       )}
     </div>
