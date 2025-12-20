@@ -5,7 +5,9 @@ import {
   Database,
   Key,
   Settings,
-  Upload
+  Upload,
+  CheckCircle2,
+  History
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -17,6 +19,8 @@ export function Sidebar() {
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/extract', icon: Upload, label: 'Extract' },
+    { to: '/validate', icon: CheckCircle2, label: 'Validate' },
+    { to: '/validate/sessions', icon: History, label: 'Validation History' },
     { to: '/sessions', icon: FileText, label: 'Sessions' },
     { to: '/schemas', icon: Database, label: 'Schemas' },
     { to: '/api-keys', icon: Key, label: 'API Keys' },

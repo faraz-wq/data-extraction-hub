@@ -122,6 +122,42 @@ interface SchemaListResponse {
   schemas?: Schema[];
 }
 
+interface ValidationIssue {
+  field: string;
+  severity: 'error' | 'warning' | 'info';
+  message: string;
+  extracted_value: unknown;
+  expected_value: unknown;
+  source_citation?: string;
+  requires_review: boolean;
+}
+
+interface ValidationReport {
+  auto_approved: boolean;
+  confidence_score: number;
+  issues: ValidationIssue[];
+  summary: string | null;
+  metadata: {
+    application_type: string;
+    rule_set_version?: string;
+    total_issues: number;
+    error_count: number;
+    warning_count: number;
+    info_count: number;
+    validation_id?: string;
+  };
+}
+
+interface ValidationRules {
+  application_type: string;
+  required_fields: string[];
+  required_documents: string[];
+  critical_fields: string[];
+  fuzzy_match_fields: string[];
+  array_proof_mappings: Record<string, string>;
+}
+
+
 class ApiClient {
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
@@ -448,7 +484,133 @@ class ApiClient {
       }),
     });
   }
+
+  // Validation endpoints
+  async validateForm(applicationType: string, files: File[]): Promise<ValidationReport> {
+    const formData = new FormData();
+    formData.append('application_type', applicationType);
+    files.forEach((file) => formData.append('files', file));
+
+    const headers: Record<string, string> = {};
+    if (this.accessToken) {
+      headers['Authorization'] = `Bearer ${this.accessToken}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/validate-form`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.detail || `Validation failed: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async validateExtraction(applicationType: string, extractionSummary: Record<string, unknown>, extractionSessionId?: string): Promise<ValidationReport> {
+    const formData = new FormData();
+    formData.append('application_type', applicationType);
+    formData.append('extraction_summary', JSON.stringify(extractionSummary));
+    if (extractionSessionId) {
+      formData.append('extraction_session_id', extractionSessionId);
+    }
+
+    const headers: Record<string, string> = {};
+    if (this.accessToken) {
+      headers['Authorization'] = `Bearer ${this.accessToken}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/validate-form`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.detail || `Validation failed: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async getValidationRules(applicationType: string): Promise<ValidationRules> {
+    return this.request<ValidationRules>(`/validate-form/rules/${encodeURIComponent(applicationType)}`);
+  }
+
+  async getSupportedValidationTypes(): Promise<{ supported_types: string[]; count: number }> {
+    return this.request<{ supported_types: string[]; count: number }>('/validate-form/supported-types');
+  }
+
+  // Validation Session Management
+  async getValidationSessions(params?: {
+    limit?: number;
+    offset?: number;
+    application_type?: string;
+    auto_approved?: boolean;
+  }): Promise<{
+    items: Array<{
+      validation_id: string;
+      application_type: string;
+      auto_approved: boolean;
+      confidence_score: number;
+      error_count: number;
+      warning_count: number;
+      info_count: number;
+      created_at: string;
+      extraction_session_id?: string;
+    }>;
+    total_count: number;
+    limit: number;
+    offset: number;
+  }> {
+    const queryParams = new URLSearchParams();
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.offset) queryParams.append('offset', params.offset.toString());
+    if (params?.application_type) queryParams.append('application_type', params.application_type);
+    if (params?.auto_approved !== undefined) queryParams.append('auto_approved', params.auto_approved.toString());
+
+    const url = `/v1/validation-sessions${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    return this.request(url);
+  }
+
+  async getValidationSession(validationId: string): Promise<{
+    validation_id: string;
+    application_type: string;
+    auto_approved: boolean;
+    confidence_score: number;
+    error_count: number;
+    warning_count: number;
+    info_count: number;
+    created_at: string;
+    extraction_session_id?: string;
+    validation_report: ValidationReport;
+    extraction_summary: Record<string, unknown>;
+    user_id?: number;
+    api_key_id?: number;
+  }> {
+    return this.request(`/v1/validation-sessions/${validationId}`);
+  }
+
+  async deleteValidationSession(validationId: string): Promise<{ message: string }> {
+    return this.request(`/v1/validation-sessions/${validationId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getValidationStats(): Promise<{
+    total_sessions: number;
+    auto_approved_count: number;
+    auto_approved_percentage: number;
+    average_confidence_score: number;
+    type_breakdown: Array<{ application_type: string; count: number }>;
+  }> {
+    return this.request('/v1/validation-sessions/stats/summary');
+  }
 }
 
 export const api = new ApiClient();
-export type { Stats, Session, SessionDetail, Schema, SchemaField, ApiKey, LogEntry, MetricPoint, User, BoundingBox };
+export type { Stats, Session, SessionDetail, Schema, SchemaField, ApiKey, LogEntry, MetricPoint, User, BoundingBox, ValidationReport, ValidationIssue, ValidationRules };

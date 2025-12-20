@@ -1,4 +1,4 @@
-import { Toaster } from "@/components/ui/toaster";
+ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -15,6 +15,9 @@ import EditSchema from "./pages/EditSchema";
 import ApiKeys from "./pages/ApiKeys";
 import Settings from "./pages/Settings";
 import Extract from "./pages/Extract";
+import Validate from "./pages/Validate";
+import ValidationSessions from "./pages/ValidationSessions";
+import ValidationSessionDetail from "./pages/ValidationSessionDetail";
 import SessionDetail from "./pages/SessionDetail";
 import NotFound from "./pages/NotFound";
 
@@ -106,6 +109,30 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Extract />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/validate"
+        element={
+          <ProtectedRoute>
+            <Validate />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/validate/sessions"
+        element={
+          <ProtectedRoute>
+            <ValidationSessions />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/validate/sessions/:id"
+        element={
+          <ProtectedRoute>
+            <ValidationSessionDetail />
           </ProtectedRoute>
         }
       />

@@ -5,7 +5,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { api, SessionDetail } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import { ThumbsUp, ThumbsDown, AlertCircle, Check, MessageSquare } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, AlertCircle, Check, MessageSquare, Layout, FileText } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -338,12 +339,41 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
         );
       })()}
 
+      {/* Document Map / Guide */}
+      {result.source_documents && result.source_documents.length > 0 && (
+        <div className="px-3 py-2 border-b border-border bg-muted/10 shrink-0">
+          <div className="text-[9px] font-black uppercase text-muted-foreground/60 tracking-widest mb-1.5 flex items-center gap-1.5">
+            <Layout className="w-3 h-3" />
+            Document Map
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {result.source_documents.map((doc: any, i: number) => (
+              <button
+                key={i}
+                onClick={() => onPageClick?.(doc.page_numbers[0])}
+                className="px-2 py-1 rounded-md bg-white border border-border shadow-sm text-[10px] font-bold hover:border-primary hover:text-primary transition-all flex items-center gap-1.5 dark:bg-background"
+              >
+                <FileText className="w-3 h-3 opacity-50" />
+                {doc.document_title}
+                <span className="opacity-40 text-[8px] font-mono">P.{doc.page_numbers.join(',')}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Fields */}
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-1">
           {Object.entries(flattenedSummary).map(([key, value]) => {
             const isHighlighted = highlightedField === key;
             const isRejected = fieldStatuses[key] === 'rejected';
+
+            // Conflict Detection
+            const fieldConflict = result.errors?.find((e: any) =>
+              (typeof e === 'object' && e?.field === key) ||
+              (typeof e === 'string' && e.includes(key))
+            );
 
             return (
               <div
@@ -354,7 +384,9 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
                     ? 'border-purple-500 bg-purple-500/10'
                     : isRejected
                       ? 'border-red-500/50 bg-red-500/5'
-                      : 'border-border hover:border-blue-500'
+                      : fieldConflict
+                        ? 'border-red-600/50 bg-red-600/5 shadow-[0_0_10px_-5px_red]'
+                        : 'border-border hover:border-blue-500'
                 )}
                 onClick={() => onFieldClick?.(key)}
                 onMouseEnter={() => onFieldHover?.(key)}
@@ -366,6 +398,12 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
                       <span className="text-[10px] font-bold text-foreground/80 tracking-tight break-all">
                         {formatFieldName(key)}
                       </span>
+
+                      {fieldConflict && (
+                        <Badge variant="destructive" className="h-3.5 px-1 text-[8px] font-black uppercase tracking-tighter shrink-0 animate-pulse">
+                          Conflict Found
+                        </Badge>
+                      )}
 
                       <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                         <TooltipProvider>
@@ -507,6 +545,12 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
                   <div className="text-sm font-medium text-foreground break-words">
                     {renderValue(value)}
                   </div>
+
+                  {fieldConflict && (
+                    <div className="mt-1 p-1.5 rounded-md bg-red-100 dark:bg-red-950/40 text-[9px] text-red-700 dark:text-red-200 font-medium border border-red-200/50 dark:border-red-800/50 leading-snug">
+                      <span className="font-bold">AI Remark:</span> {typeof fieldConflict === 'object' ? fieldConflict.message : fieldConflict}
+                    </div>
+                  )}
 
                   {renderCitation(key)}
                 </div>
