@@ -238,12 +238,33 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
       <div className="px-4 py-3 border-b border-border/40 bg-white/80 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between shrink-0 shadow-sm">
         <div className="flex flex-col min-w-0">
           <h2 className="text-[12px] font-bold text-foreground leading-tight tracking-tight uppercase">
-            {result.application_type.replace('custom:', '')}
+            {result.application_type?.replace('custom:', '') || (result as any).application_type?.replace('custom:', '') || 'N/A'}
           </h2>
           <div className="flex items-center gap-1.5 mt-0.5">
-            <div className="w-1 h-1 rounded-full bg-green-500" />
-            <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-tighter truncate">
-              Live Extraction Workspace
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1.5 cursor-help">
+                    <div className={cn(
+                      "w-1.5 h-1.5 rounded-full",
+                      (result as any).confidence_score >= 0.9 ? "bg-green-500" :
+                        (result as any).confidence_score >= 0.7 ? "bg-amber-500" : "bg-red-500"
+                    )} />
+                    <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-tighter truncate">
+                      {(result as any).confidence_score ? `${Math.round((result as any).confidence_score * 100)}% Confidence` : "Live Workspace"}
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                {(result as any).confidence_reason && (
+                  <TooltipContent side="bottom" className="bg-black text-white text-[10px] p-2 rounded-xl border-none shadow-2xl max-w-[200px]">
+                    {(result as any).confidence_reason}
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
+            <span className="text-[9px] text-muted-foreground/30 opacity-50 px-1">•</span>
+            <span className="text-[8px] font-black tracking-widest uppercase opacity-70">
+              {(result as any).confidence_score >= 0.9 ? "Verified" : "Needs Review"}
             </span>
           </div>
         </div>
@@ -283,40 +304,63 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
         if (result.validation_summary === undefined && missingFields.length === 0 && mismatches.length === 0) return null;
 
         return (
-          <div className="bg-[#5856D6]/5 border-b border-[#5856D6]/10 shrink-0">
-            <div className="px-4 py-2 flex items-start gap-3">
+          <div className="bg-[#5856D6]/5 border-b border-[#5856D6]/10 shrink-0 animate-in fade-in slide-in-from-top-2 duration-500">
+            <div className="px-4 py-2.5 flex items-start gap-3">
               <AlertCircle className="w-3.5 h-3.5 text-[#5856D6] shrink-0 mt-0.5" />
               <div className="text-[10px] leading-snug">
-                <span className="font-bold uppercase tracking-widest text-[#5856D6] mr-2 opacity-80">
-                  Insights
-                </span>
-                <span className="text-black/70 font-medium">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-black uppercase tracking-[0.2em] text-[#5856D6] opacity-80">
+                    Risk Analysis
+                  </span>
+                  {(result as any).confidence_score < 0.9 && (
+                    <Badge variant="outline" className="h-4 text-[7px] border-[#5856D6]/20 text-[#5856D6] bg-[#5856D6]/5 rounded-sm px-1 font-black">
+                      AUDIT FLAG
+                    </Badge>
+                  )}
+                </div>
+                <span className="text-black/80 font-bold leading-tight">
                   {result.validation_summary || "Automated check completed with minor remarks."}
                 </span>
               </div>
             </div>
 
-            {result.errors && result.errors.length > 0 && (
-              <div className="px-4 pb-3 pt-1">
-                <div className="space-y-2">
-                  <div className="flex flex-col gap-1.5">
-                    <ul className="space-y-1">
-                      {result.errors.map((err: any, i: number) => (
-                        <li key={i} className="text-[9px] text-black/60 font-medium leading-relaxed flex items-center gap-2 bg-white/40 p-1.5 rounded-lg border border-[#5856D6]/5">
-                          <div className="w-1 h-1 rounded-full bg-[#5856D6] shrink-0" />
-                          <div className="truncate">
-                            {typeof err === 'object' ? (
-                              <>
-                                <span className="font-bold text-black/80 mr-1">{err.field}:</span>
-                                <span>{err.message}</span>
-                              </>
-                            ) : (
-                              <span>{err}</span>
-                            )}
+            {(result.errors?.length || (result as any).issues?.length) > 0 && (
+              <div className="px-4 pb-4 pt-1">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[8px] font-black uppercase tracking-widest text-black/30">
+                      Audit Log ({result.errors?.length || (result as any).issues?.length})
+                    </span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {[...(result.errors || []), ...((result as any).issues || [])].map((err: any, i: number) => {
+                      const severity = err.severity || (err.requires_review ? 'error' : 'warning');
+                      const isError = severity === 'error';
+
+                      return (
+                        <div key={i} className={cn(
+                          "group relative text-[9px] leading-snug p-2 rounded-xl border transition-all duration-300",
+                          isError
+                            ? "bg-red-500/[0.03] border-red-500/10 text-red-900/80"
+                            : "bg-amber-500/[0.03] border-amber-500/10 text-amber-900/80"
+                        )}>
+                          <div className="flex items-start gap-2.5">
+                            <div className={cn(
+                              "mt-1 w-1 h-1 rounded-full shrink-0 animate-pulse",
+                              isError ? "bg-red-500" : "bg-amber-500"
+                            )} />
+                            <div className="flex flex-col gap-0.5 min-w-0">
+                              <span className="font-black uppercase text-[7px] tracking-tight opacity-50">
+                                {err.field || 'Generic Check'} • {severity}
+                              </span>
+                              <span className="font-bold leading-relaxed break-words">
+                                {typeof err === 'object' ? err.message : err}
+                              </span>
+                            </div>
                           </div>
-                        </li>
-                      ))}
-                    </ul>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -464,16 +508,28 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
               </DialogHeader>
             </div>
 
-            <div className="p-4 rounded-2xl bg-[#F2F2F7] border border-black/5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest leading-none">Flagged Issues</span>
-                <span className="text-xl font-black text-red-500 leading-none">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-4 rounded-2xl bg-[#F2F2F7] border border-black/5 flex flex-col items-center justify-center">
+                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Confidence</span>
+                <span className={cn(
+                  "text-2xl font-black leading-none",
+                  (result as any).confidence_score >= 0.9 ? "text-green-600" :
+                    (result as any).confidence_score >= 0.7 ? "text-amber-600" : "text-red-600"
+                )}>
+                  {(result as any).confidence_score ? `${Math.round((result as any).confidence_score * 100)}%` : "N/A"}
+                </span>
+              </div>
+              <div className="p-4 rounded-2xl bg-[#F2F2F7] border border-black/5 flex flex-col items-center justify-center">
+                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Issues</span>
+                <span className="text-2xl font-black text-red-500 leading-none">
                   {Object.values(fieldStatuses).filter(s => s === 'rejected').length}
                 </span>
               </div>
+            </div>
 
-              {Object.entries(fieldStatuses).filter(([_, s]) => s === 'rejected').length > 0 && (
-                <div className="mt-4 space-y-1 max-h-32 overflow-y-auto px-1 custom-scrollbar">
+            {Object.entries(fieldStatuses).filter(([_, s]) => s === 'rejected').length > 0 && (
+              <div className="p-4 rounded-2xl bg-[#F2F2F7] border border-black/5">
+                <div className="space-y-1 max-h-32 overflow-y-auto px-1 custom-scrollbar">
                   {Object.entries(fieldStatuses)
                     .filter(([_, s]) => s === 'rejected')
                     .map(([fieldName]) => (
@@ -483,8 +539,8 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
                     ))
                   }
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             <div className="flex flex-col gap-2 pt-2">
               <Button
