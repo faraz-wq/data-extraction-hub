@@ -45,6 +45,7 @@ interface SessionDetail extends Session {
   citations: Record<string, string>;
   documents: Document[];
   source_documents?: Array<{ filename: string; document_title: string; page_numbers: number[] }>;
+  field_remarks?: Record<string, string>;
   errors?: any[];
   validation_summary?: string;
 }
@@ -420,7 +421,9 @@ class ApiClient {
       documents: [],
       source_documents: source_documents || [],
       errors: _errors || [],
+      field_remarks: data.field_remarks || {},
       validation_summary: data.validation_summary,
+      issues: [],
     };
   }
 
@@ -470,7 +473,9 @@ class ApiClient {
       documents: [],
       source_documents: source_documents || [],
       errors: _errors || [],
+      field_remarks: data.field_remarks || {},
       validation_summary: data.validation_summary,
+      issues: [],
     };
   }
 

@@ -5,7 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { api, SessionDetail } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import { ThumbsUp, ThumbsDown, AlertCircle, Check, MessageSquare, Layout, FileText } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, AlertCircle, Check, MessageSquare, Layout, FileText, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
@@ -472,6 +472,16 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
                   {fieldConflict && isHighlighted && !fieldIssues.length && (
                     <div className="mt-1.5 p-2 rounded-xl bg-amber-500/10 text-[9px] text-amber-700 font-bold border border-amber-500/10 leading-snug animate-in fade-in slide-in-from-top-1">
                       {typeof fieldConflict === 'object' ? fieldConflict.message : fieldConflict}
+                    </div>
+                  )}
+
+                  {/* AI Observation / Field Remarks */}
+                  {isHighlighted && result.field_remarks?.[key] && (
+                    <div className="mt-1.5 p-2 rounded-xl bg-[#5856D6]/5 text-[9px] text-[#5856D6] font-bold border border-[#5856D6]/10 leading-snug animate-in fade-in slide-in-from-top-1">
+                      <div className="flex items-start gap-2">
+                        <Sparkles className="w-2.5 h-2.5 shrink-0 mt-0.5 opacity-60" />
+                        {result.field_remarks[key]}
+                      </div>
                     </div>
                   )}
 
