@@ -100,6 +100,22 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
     return 1;
   }, [result.source_documents, result.documents]);
 
+  const pageMap = useMemo(() => {
+    const sourceDocs = result.source_documents || result.documents;
+    if (!Array.isArray(sourceDocs)) return [];
+
+    const map: Record<number, string> = {};
+    sourceDocs.forEach((doc: any) => {
+      doc.page_numbers?.forEach((p: number) => {
+        map[p] = doc.document_title;
+      });
+    });
+
+    return Object.entries(map)
+      .map(([page, title]) => ({ page: parseInt(page), title }))
+      .sort((a, b) => a.page - b.page);
+  }, [result.source_documents, result.documents]);
+
   const renderCitation = (fieldName: string) => {
     const boxes = result.bounding_boxes?.[fieldName];
 
@@ -288,104 +304,68 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
         </div>
       </div>
 
-      {/* Modern Validation Alert Tab */}
+      {/* Aggregate Verification Status Header */}
       {(() => {
-        const missingFields = Object.entries(flattenedSummary)
-          .filter(([_, v]) => v === null || v === undefined || v === '' || (Array.isArray(v) && v.length === 0))
-          .map(([k]) => k);
+        const issues = result.issues || [];
+        const errorCount = issues.filter(i => i.severity === 'error').length;
+        const warningCount = issues.filter(i => i.severity === 'warning').length;
 
-        const mismatches = (result.errors || []).map((err: any) => {
-          if (typeof err === 'object' && err?.field) return err.field;
-          const match = typeof err === 'string' ? err.match(/field:?\s*([\w\.]+)/i) : null;
-          return match ? match[1] : 'Unknown';
-        });
-
-        if (result.validation_summary === null || result.validation_summary === '') return null;
-        if (result.validation_summary === undefined && missingFields.length === 0 && mismatches.length === 0) return null;
+        if (issues.length === 0) return null;
 
         return (
-          <div className="bg-[#5856D6]/5 border-b border-[#5856D6]/10 shrink-0 animate-in fade-in slide-in-from-top-2 duration-500">
-            <div className="px-4 py-2.5 flex items-start gap-3">
-              <AlertCircle className="w-3.5 h-3.5 text-[#5856D6] shrink-0 mt-0.5" />
-              <div className="text-[10px] leading-snug">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-black uppercase tracking-[0.2em] text-[#5856D6] opacity-80">
-                    Risk Analysis
-                  </span>
-                  {(result as any).confidence_score < 0.9 && (
-                    <Badge variant="outline" className="h-4 text-[7px] border-[#5856D6]/20 text-[#5856D6] bg-[#5856D6]/5 rounded-sm px-1 font-black">
-                      AUDIT FLAG
-                    </Badge>
-                  )}
+          <div className="bg-[#5856D6]/5 border-b border-[#5856D6]/10 shrink-0 px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "flex items-center justify-center w-8 h-8 rounded-xl",
+                  errorCount > 0 ? "bg-red-500/10 text-red-600" : "bg-green-500/10 text-green-600"
+                )}>
+                  {errorCount > 0 ? <AlertCircle className="w-4 h-4" /> : <Check className="w-4 h-4" />}
                 </div>
-                <span className="text-black/80 font-bold leading-tight">
-                  {result.validation_summary || "Automated check completed with minor remarks."}
-                </span>
+                <div>
+                  <div className="text-[11px] font-black uppercase tracking-widest text-black/80">
+                    Verification Status
+                  </div>
+                  <div className="text-[10px] font-bold text-muted-foreground">
+                    {errorCount > 0 ? `${errorCount} Critical Issues Found` : "All Core Components Validated"}
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                {errorCount > 0 && (
+                  <Badge variant="outline" className="h-5 text-[8px] bg-red-500/5 text-red-600 border-red-500/20 font-black rounded-full px-2">
+                    {errorCount} ERRORS
+                  </Badge>
+                )}
+                {warningCount > 0 && (
+                  <Badge variant="outline" className="h-5 text-[8px] bg-amber-500/5 text-amber-600 border-amber-500/20 font-black rounded-full px-2">
+                    {warningCount} WARNINGS
+                  </Badge>
+                )}
               </div>
             </div>
-
-            {(result.errors?.length || (result as any).issues?.length) > 0 && (
-              <div className="px-4 pb-4 pt-1">
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[8px] font-black uppercase tracking-widest text-black/30">
-                      Audit Log ({result.errors?.length || (result as any).issues?.length})
-                    </span>
-                  </div>
-                  <div className="space-y-1.5">
-                    {[...(result.errors || []), ...((result as any).issues || [])].map((err: any, i: number) => {
-                      const severity = err.severity || (err.requires_review ? 'error' : 'warning');
-                      const isError = severity === 'error';
-
-                      return (
-                        <div key={i} className={cn(
-                          "group relative text-[9px] leading-snug p-2 rounded-xl border transition-all duration-300",
-                          isError
-                            ? "bg-red-500/[0.03] border-red-500/10 text-red-900/80"
-                            : "bg-amber-500/[0.03] border-amber-500/10 text-amber-900/80"
-                        )}>
-                          <div className="flex items-start gap-2.5">
-                            <div className={cn(
-                              "mt-1 w-1 h-1 rounded-full shrink-0 animate-pulse",
-                              isError ? "bg-red-500" : "bg-amber-500"
-                            )} />
-                            <div className="flex flex-col gap-0.5 min-w-0">
-                              <span className="font-black uppercase text-[7px] tracking-tight opacity-50">
-                                {err.field || 'Generic Check'} • {severity}
-                              </span>
-                              <span className="font-bold leading-relaxed break-words">
-                                {typeof err === 'object' ? err.message : err}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         );
       })()}
 
-      {/* Document Map - Higher Density */}
-      {result.source_documents && result.source_documents.length > 0 && (
+
+      {/* Page Classification Map */}
+      {pageMap.length > 0 && (
         <div className="px-4 py-2 bg-white border-b border-border/30 shrink-0">
           <div className="text-[8px] font-bold uppercase text-muted-foreground/50 tracking-[0.2em] mb-2 flex items-center gap-2">
             <Layout className="w-2.5 h-2.5 opacity-40" />
-            Evidence Sources
+            Page Classification
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {result.source_documents.map((doc: any, i: number) => (
+            {pageMap.map(({ page, title }) => (
               <button
-                key={i}
-                onClick={() => onPageClick?.(doc.page_numbers[0])}
-                className="px-2.5 py-1 rounded-full bg-[#F2F2F7] border border-transparent shadow-sm text-[9px] font-bold hover:bg-black hover:text-white transition-all flex items-center gap-1.5 text-black/70"
+                key={page}
+                onClick={() => onPageClick?.(page)}
+                className="px-2 py-1 rounded-md bg-[#F2F2F7] border border-transparent shadow-sm text-[9px] font-bold hover:bg-black hover:text-white transition-all flex items-center gap-1.5 text-black/70 group/page"
+                title={`Page ${page}: ${title}`}
               >
-                <FileText className="w-2.5 h-2.5 opacity-50" />
-                {doc.document_title}
-                <span className="opacity-40 text-[7px] font-mono">#{doc.page_numbers[0]}</span>
+                <span className="bg-black/5 px-1 rounded text-[7px] min-w-[12px] text-center group-hover/page:bg-white/20">{page}</span>
+                <span className="truncate max-w-[90px]">{title}</span>
               </button>
             ))}
           </div>
@@ -399,7 +379,9 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
             const isHighlighted = highlightedField === key;
             const isRejected = fieldStatuses[key] === 'rejected';
 
-            const fieldConflict = result.errors?.find((e: any) =>
+            const fieldIssues = (result.issues || []).filter(i => i.field === key);
+
+            const fieldConflict = fieldIssues[0] || result.errors?.find((e: any) =>
               (typeof e === 'object' && e?.field === key) ||
               (typeof e === 'string' && e.includes(key))
             );
@@ -462,7 +444,32 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
                     {renderValue(value)}
                   </div>
 
-                  {fieldConflict && isHighlighted && (
+                  {/* Field-Specific Validation Results */}
+                  {isHighlighted && fieldIssues.length > 0 && (
+                    <div className="mt-2 space-y-1.5 animate-in fade-in slide-in-from-top-1">
+                      {fieldIssues.map((issue, idx) => (
+                        <div
+                          key={idx}
+                          className={cn(
+                            "p-2 rounded-xl border text-[9px] font-bold leading-snug",
+                            issue.severity === 'error'
+                              ? "bg-red-500/5 border-red-500/10 text-red-700"
+                              : "bg-amber-500/5 border-amber-500/10 text-amber-700"
+                          )}
+                        >
+                          <div className="flex items-start gap-2">
+                            <div className={cn(
+                              "w-1 h-1 rounded-full mt-1 shrink-0",
+                              issue.severity === 'error' ? "bg-red-500" : "bg-amber-500"
+                            )} />
+                            {issue.message}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {fieldConflict && isHighlighted && !fieldIssues.length && (
                     <div className="mt-1.5 p-2 rounded-xl bg-amber-500/10 text-[9px] text-amber-700 font-bold border border-amber-500/10 leading-snug animate-in fade-in slide-in-from-top-1">
                       {typeof fieldConflict === 'object' ? fieldConflict.message : fieldConflict}
                     </div>

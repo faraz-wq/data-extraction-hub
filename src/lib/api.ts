@@ -39,6 +39,7 @@ interface Session {
 }
 
 interface SessionDetail extends Session {
+  issues: any[];
   summary: Record<string, unknown>;
   bounding_boxes: Record<string, BoundingBox[]>;
   citations: Record<string, string>;
