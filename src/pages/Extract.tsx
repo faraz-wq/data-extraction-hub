@@ -116,6 +116,35 @@ export default function Extract() {
           });
         });
 
+        // 3. Capture Unmapped Entites with Bounding Boxes (Supplementary Data)
+        const unmappedSummary: Record<string, any> = {};
+        const unmappedFields = (report as any).schema_projection?.unmapped_fields || [];
+
+        unmappedFields.forEach((ent: any) => {
+          // Use the canonical entity from the map if available (ensures coordinates are resolved)
+          const resolvedEnt = entityMap.get(ent.field_id) || ent;
+
+          if (resolvedEnt.citation?.bounding_box && Array.isArray(resolvedEnt.citation.bounding_box) && resolvedEnt.citation.bounding_box.length > 0) {
+            const key = `ext_${resolvedEnt.field_name}`;
+            unmappedSummary[key] = resolvedEnt.field_value;
+
+            if (!bboxes[key]) bboxes[key] = [];
+            resolvedEnt.citation.bounding_box.forEach((box: any) => {
+              bboxes[key].push({
+                filename: resolvedEnt.document.filename,
+                page: resolvedEnt.document.page,
+                coordinates: box,
+                document_title: resolvedEnt.document.document_type
+              });
+            });
+
+            if (resolvedEnt.citation?.text_snippet) {
+              if (!citations[key]) citations[key] = [];
+              citations[key].push(`${resolvedEnt.document.filename} (Page ${resolvedEnt.document.page}) - ${resolvedEnt.citation.text_snippet}`);
+            }
+          }
+        });
+
         // 3. Map Issues
         // Issues format is strict now: { schema_field, severity, message }
         // We map 'schema_field' to legacy 'field' property for UI
@@ -142,6 +171,7 @@ export default function Extract() {
           created_at: new Date().toISOString(),
           file_count: files.length,
           summary: flatSummary,
+          unmapped_summary: unmappedSummary,
           bounding_boxes: bboxes,
           citations: citations,
           documents: [],

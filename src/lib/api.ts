@@ -49,6 +49,7 @@ interface SessionDetail extends Session {
   errors?: any[];
   validation_summary?: string;
   page_text?: Record<string, string>;
+  unmapped_summary?: Record<string, unknown>;
 }
 
 interface BoundingBox {

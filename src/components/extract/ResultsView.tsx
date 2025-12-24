@@ -63,6 +63,7 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
   const [activeFeedbackField, setActiveFeedbackField] = useState<string | null>(null);
   const [fieldStatuses, setFieldStatuses] = useState<Record<string, 'accepted' | 'rejected' | null>>({});
   const [showSummaryModal, setShowSummaryModal] = useState(false);
+  const [showUnmappedFields, setShowUnmappedFields] = useState(false);
 
   const navigate = useNavigate();
 
@@ -81,6 +82,10 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
   const flattenedSummary = useMemo(() => {
     return flattenObject(result.summary || {});
   }, [result.summary]);
+
+  const flattenedUnmappedSummary = useMemo(() => {
+    return flattenObject(result.unmapped_summary || {});
+  }, [result.unmapped_summary]);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -531,6 +536,79 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
             );
           })}
         </div>
+
+        {/* Supplementary Extracted Fields (Fields with Bounding Boxes not in Schema) */}
+        {Object.keys(flattenedUnmappedSummary).length > 0 && (
+          <div className="border-t border-border/20">
+            <button
+              onClick={() => setShowUnmappedFields(!showUnmappedFields)}
+              className="w-full px-4 py-3 flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:bg-[#F2F2F7]/40 transition-all bg-muted/5 group"
+            >
+              <div className="flex items-center gap-2">
+                <FileText className="w-3.5 h-3.5 opacity-50" />
+                <span>Supplementary Data ({Object.keys(flattenedUnmappedSummary).length})</span>
+                {showUnmappedFields && (
+                  <Badge variant="outline" className="h-4 text-[7px] bg-purple-500/5 text-purple-600 border-purple-500/20 rounded-full px-1.5 ml-1">
+                    ALL EVIDENCED
+                  </Badge>
+                )}
+              </div>
+              <span className="text-[9px] opacity-40 group-hover:opacity-100 transition-opacity">
+                {showUnmappedFields ? 'HIDE' : 'VIEW MORE'}
+              </span>
+            </button>
+
+            {showUnmappedFields && (
+              <div className="divide-y divide-border/20 bg-muted/5 animate-in fade-in slide-in-from-top-2 duration-300">
+                {Object.entries(flattenedUnmappedSummary).map(([key, value]) => {
+                  const isHighlighted = highlightedField === key;
+
+                  return (
+                    <div
+                      key={key}
+                      className={cn(
+                        'px-4 py-2 transition-all duration-300 cursor-pointer relative group',
+                        isHighlighted
+                          ? 'bg-purple-500/5 border-l-2 border-purple-500'
+                          : 'hover:bg-[#F2F2F7]/60 border-l-2 border-transparent'
+                      )}
+                      onClick={() => onFieldClick?.(key)}
+                      onMouseEnter={() => onFieldHover?.(key)}
+                      onMouseLeave={() => onFieldHover?.(null)}
+                    >
+                      <div className="flex flex-col space-y-0.5">
+                        <div className="flex items-center justify-between">
+                          <span className={cn(
+                            "text-[9px] font-bold uppercase tracking-tight text-muted-foreground/50",
+                            isHighlighted && "text-purple-600"
+                          )}>
+                            {key.replace(/^ext_/, '').replace(/_/g, ' ')}
+                          </span>
+                          <button
+                            className="h-4 px-1.5 text-[8px] font-bold hover:text-black text-muted-foreground/30 transition-all uppercase opacity-0 group-hover:opacity-100"
+                            onClick={(e) => { e.stopPropagation(); copyToClipboard(String(value)); }}
+                          >
+                            Copy
+                          </button>
+                        </div>
+                        <div className={cn(
+                          "text-[12px] font-medium break-words leading-tight tracking-tight",
+                          isHighlighted ? "text-black" : "text-foreground/80"
+                        )}>
+                          {String(value)}
+                        </div>
+                        <div className="opacity-50 mt-1">
+                          {renderCitation(key)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="h-10" />
       </div>
 
