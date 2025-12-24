@@ -42,12 +42,13 @@ interface SessionDetail extends Session {
   issues: any[];
   summary: Record<string, unknown>;
   bounding_boxes: Record<string, BoundingBox[]>;
-  citations: Record<string, string>;
+  citations: Record<string, string | string[] | null>;
   documents: Document[];
   source_documents?: Array<{ filename: string; document_title: string; page_numbers: number[] }>;
   field_remarks?: Record<string, string>;
   errors?: any[];
   validation_summary?: string;
+  page_text?: Record<string, string>;
 }
 
 interface BoundingBox {
@@ -139,6 +140,7 @@ interface ValidationReport {
   confidence_score: number;
   issues: ValidationIssue[];
   summary: string | null;
+  page_text?: Record<string, string>;
   metadata: {
     application_type: string;
     rule_set_version?: string;
@@ -407,6 +409,8 @@ class ApiClient {
       _token_usage,
       source_documents,
       _errors,
+      field_remarks,
+      validation_summary,
       ...summaryFields
     } = data;
 
@@ -459,6 +463,8 @@ class ApiClient {
       _token_usage,
       source_documents,
       _errors,
+      field_remarks,
+      validation_summary,
       ...summaryFields
     } = data;
 

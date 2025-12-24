@@ -3,6 +3,7 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import { Button } from '@/components/ui/button';
 import { BoundingBox } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { FileText } from 'lucide-react';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
@@ -15,6 +16,7 @@ interface PDFViewerWithBoxesProps {
   onFieldClick?: (field: string) => void;
   page?: number;
   onPageChange?: (page: number) => void;
+  onShowText?: () => void;
 }
 
 export function PDFViewerWithBoxes({
@@ -24,6 +26,7 @@ export function PDFViewerWithBoxes({
   onFieldClick,
   page,
   onPageChange,
+  onShowText,
 }: PDFViewerWithBoxesProps) {
   const [numPages, setNumPages] = useState<number>(0);
   const [internalPage, setInternalPage] = useState(1);
@@ -147,7 +150,18 @@ export function PDFViewerWithBoxes({
       {/* Header - Minimalist */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border/30 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 bg-white/50 backdrop-blur-sm z-10 shrink-0">
         <div className="flex items-center gap-4">
-          <span>Document Preview</span>
+          <div className="flex items-center gap-3">
+            <span>Document Preview</span>
+            <button
+              onClick={onShowText}
+              className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-black/5 hover:text-black transition-all text-[9px] font-bold text-[#5856D6]"
+              title="View extracted text for this page"
+            >
+              <FileText className="w-3 h-3" />
+              View Raw Text
+            </button>
+          </div>
+
           {allHighlightBoxes.length > 1 && (
             <div className="flex items-center gap-2 bg-[#5856D6]/10 text-[#5856D6] px-2 py-0.5 rounded-full border border-[#5856D6]/10 animate-in fade-in slide-in-from-left-2">
               <span className="opacity-70 text-[8px]">Occurrences</span>

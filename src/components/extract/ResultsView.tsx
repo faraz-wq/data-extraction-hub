@@ -5,7 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { api, SessionDetail } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import { ThumbsUp, ThumbsDown, AlertCircle, Check, MessageSquare, Layout, FileText, Sparkles } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, AlertCircle, Check, MessageSquare, Layout, FileText, Sparkles, Flag } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
@@ -146,9 +146,9 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
       const proofCitations = uniqueLocations.filter(loc => !loc.isApplication);
 
       return (
-        <div className="mt-2 text-wrap">
+        <div className="mt-1 text-wrap">
           {proofCitations.length > 0 && (
-            <div className="flex items-baseline gap-1.5 flex-wrap">
+            <div className="flex items-baseline gap-1 flex-wrap">
               <span className="text-[9px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider shrink-0">
                 Proofs:
               </span>
@@ -181,6 +181,17 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
 
     const textCitation = result.citations?.[fieldName];
     if (textCitation) {
+      if (Array.isArray(textCitation)) {
+        return (
+          <div className="flex flex-col gap-1 mt-1">
+            {textCitation.map((cite, idx) => (
+              <p key={idx} className="text-[10px] text-muted-foreground italic">
+                {cite}
+              </p>
+            ))}
+          </div>
+        );
+      }
       return (
         <p className="text-[10px] text-muted-foreground mt-1 italic">
           {textCitation}
@@ -348,23 +359,47 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
         );
       })()}
 
+      {/* Validation Summary & Field Remarks Highlight */}
+      {(result.validation_summary || (result.field_remarks && Object.keys(result.field_remarks).length > 0)) && (
+        <div className="px-4 py-3 bg-indigo-50/30 border-b border-indigo-100/50 shrink-0 space-y-3">
+          {result.validation_summary && (
+            <div className="flex gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-600 mt-0.5 shrink-0" />
+              <div className="text-[10px] font-medium text-indigo-900 leading-snug">
+                <span className="font-bold text-indigo-700 uppercase tracking-wide text-[9px] block mb-0.5">Summary</span>
+                {result.validation_summary}
+              </div>
+            </div>
+          )}
+
+          {result.field_remarks && Object.entries(result.field_remarks).length > 0 && (
+            <div className="space-y-1.5 pl-5 relative before:absolute before:left-1.5 before:top-1 before:bottom-1 before:w-[1px] before:bg-indigo-600/20">
+              {Object.entries(result.field_remarks).map(([field, remark], idx) => (
+                <div key={idx} className="text-[10px] text-indigo-900/80 leading-snug">
+                  <span className="font-bold text-indigo-700">{field.replace(/_/g, ' ')}:</span> {remark}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Page Classification Map */}
       {pageMap.length > 0 && (
-        <div className="px-4 py-2 bg-white border-b border-border/30 shrink-0">
+        <div className="px-4 py-1 bg-white border-b border-border/30 shrink-0">
           <div className="text-[8px] font-bold uppercase text-muted-foreground/50 tracking-[0.2em] mb-2 flex items-center gap-2">
             <Layout className="w-2.5 h-2.5 opacity-40" />
             Page Classification
           </div>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1">
             {pageMap.map(({ page, title }) => (
               <button
                 key={page}
                 onClick={() => onPageClick?.(page)}
-                className="px-2 py-1 rounded-md bg-[#F2F2F7] border border-transparent shadow-sm text-[9px] font-bold hover:bg-black hover:text-white transition-all flex items-center gap-1.5 text-black/70 group/page"
+                className="px-2 py-1 rounded-md bg-[#F2F2F7] border border-transparent shadow-sm text-[9px] font-bold hover:bg-black hover:text-white transition-all flex items-center gap-1 text-black/70 group/page"
                 title={`Page ${page}: ${title}`}
               >
-                <span className="bg-black/5 px-1 rounded text-[7px] min-w-[12px] text-center group-hover/page:bg-white/20">{page}</span>
+                <span className="px-1 rounded text-[7px] min-w-[12px] text-center">{page}</span>
                 <span className="truncate max-w-[90px]">{title}</span>
               </button>
             ))}
@@ -390,13 +425,13 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
               <div
                 key={key}
                 className={cn(
-                  'px-4 py-2 transition-all duration-300 cursor-pointer relative group',
+                  'px-4 py-1 transition-all duration-300 cursor-pointer relative group',
                   isHighlighted
                     ? 'bg-[#5856D6]/5 border-l-2 border-[#5856D6]'
                     : isRejected
-                      ? 'bg-red-500/[0.03] border-l-2 border-red-500'
+                      ? 'bg-red-500/[0.08] border-l-2 border-red-500'
                       : fieldConflict
-                        ? 'bg-amber-500/[0.03] border-l-2 border-amber-500'
+                        ? 'bg-amber-500/[0.1] border-l-2 border-amber-500'
                         : 'hover:bg-[#F2F2F7]/40 border-l-2 border-transparent'
                 )}
                 onClick={() => onFieldClick?.(key)}
@@ -407,7 +442,7 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className={cn(
-                        "text-[9px] font-bold uppercase tracking-tight break-all transition-colors",
+                        "text-[10px] font-bold uppercase tracking-tight break-all transition-colors",
                         isHighlighted ? "text-[#5856D6]" : "text-muted-foreground/60"
                       )}>
                         {formatFieldName(key)}
@@ -418,27 +453,30 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
                       )}
                     </div>
 
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                       <button
-                        className="h-4 px-1.5 text-[8px] font-bold hover:text-black text-muted-foreground/40 transition-colors uppercase"
+                        className="h-4 px-1.5 text-[8px] font-bold hover:text-black text-muted-foreground/40 transition-all uppercase opacity-0 group-hover:opacity-100"
                         onClick={() => copyToClipboard(renderValue(value))}
                       >
                         Copy
                       </button>
                       <button
                         className={cn(
-                          "h-4 px-1.5 text-[8px] font-bold transition-colors uppercase rounded-md",
-                          isRejected ? "bg-red-500 text-white" : "hover:text-red-500 text-muted-foreground/40"
+                          "h-5 px-2 text-[8px] font-bold transition-all uppercase rounded-md flex items-center gap-1.5 border",
+                          isRejected
+                            ? "bg-red-500 text-white border-red-500 shadow-sm"
+                            : "bg-white text-muted-foreground border-border hover:border-red-500/50 hover:text-red-600 hover:bg-red-50 shadow-sm"
                         )}
                         onClick={() => toggleIssue(key)}
                       >
+                        <Flag className={cn("w-2.5 h-2.5", isRejected && "fill-current")} />
                         {isRejected ? 'Flagged' : 'Flag'}
                       </button>
                     </div>
                   </div>
 
                   <div className={cn(
-                    "text-[11px] font-bold break-words leading-tight tracking-tight",
+                    "text-[14px] font-bold break-words leading-tight tracking-tight",
                     isHighlighted ? "text-black" : "text-foreground"
                   )}>
                     {renderValue(value)}
@@ -512,52 +550,38 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
       <Dialog open={showSummaryModal} onOpenChange={setShowSummaryModal}>
         <DialogContent className="sm:max-w-md rounded-3xl border-none shadow-3xl bg-white p-0 overflow-hidden">
           <div className="p-8 space-y-6 text-center">
-            <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-2">
-              <Check className="w-8 h-8 text-green-600" />
-            </div>
-
-            <div className="space-y-2">
-              <DialogHeader className="text-center">
-                <DialogTitle className="text-2xl font-black tracking-tight text-center">Review Ready</DialogTitle>
-                <DialogDescription className="text-center text-sm font-medium">
-                  Review complete for {result.application_type.replace('custom:', '')}.
-                </DialogDescription>
-              </DialogHeader>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-4 rounded-2xl bg-[#F2F2F7] border border-black/5 flex flex-col items-center justify-center">
-                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Confidence</span>
-                <span className={cn(
-                  "text-2xl font-black leading-none",
-                  (result as any).confidence_score >= 0.9 ? "text-green-600" :
-                    (result as any).confidence_score >= 0.7 ? "text-amber-600" : "text-red-600"
-                )}>
-                  {(result as any).confidence_score ? `${Math.round((result as any).confidence_score * 100)}%` : "N/A"}
-                </span>
+            <div className="space-y-4">
+              <div className="w-12 h-12 bg-green-500/10 rounded-full flex items-center justify-center mx-auto">
+                <Check className="w-5 h-5 text-green-600" />
               </div>
-              <div className="p-4 rounded-2xl bg-[#F2F2F7] border border-black/5 flex flex-col items-center justify-center">
-                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Issues</span>
-                <span className="text-2xl font-black text-red-500 leading-none">
-                  {Object.values(fieldStatuses).filter(s => s === 'rejected').length}
-                </span>
-              </div>
+              <h3 className="text-lg font-bold text-foreground tracking-tight">Review Complete</h3>
             </div>
 
-            {Object.entries(fieldStatuses).filter(([_, s]) => s === 'rejected').length > 0 && (
-              <div className="p-4 rounded-2xl bg-[#F2F2F7] border border-black/5">
-                <div className="space-y-1 max-h-32 overflow-y-auto px-1 custom-scrollbar">
-                  {Object.entries(fieldStatuses)
-                    .filter(([_, s]) => s === 'rejected')
-                    .map(([fieldName]) => (
-                      <div key={fieldName} className="text-[10px] font-bold text-red-500 uppercase tracking-tight text-left truncate bg-white/50 px-2 py-1 rounded-md border border-red-500/10">
-                        • {fieldName.replace(/_/g, ' ')}
-                      </div>
-                    ))
-                  }
+            <div className="text-sm text-muted-foreground leading-relaxed px-4">
+              {Object.values(fieldStatuses).filter(s => s === 'rejected').length === 0 ? (
+                <p>
+                  The <span className="font-medium text-foreground">{(result as any).application_type?.replace('custom:', '')}</span> application has been fully verified.
+                  Review completed with a confidence score of <span className="font-medium text-foreground">{Math.round((result as any).confidence_score * 100)}%</span>.
+                  No issues were flagged during the manual review process.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  <p>
+                    You have flagged <span className="font-medium text-red-600">{Object.values(fieldStatuses).filter(s => s === 'rejected').length} issues</span> in
+                    the <span className="font-medium text-foreground">{(result as any).application_type?.replace('custom:', '')}</span> application.
+                  </p>
+                  <p className="bg-red-50 p-4 rounded-xl text-red-700/80 text-[13px]">
+                    The following fields require attention:{" "}
+                    <span className="font-semibold text-red-700">
+                      {Object.entries(fieldStatuses)
+                        .filter(([_, s]) => s === 'rejected')
+                        .map(([field]) => field.replace(/_/g, ' '))
+                        .join(', ')}
+                    </span>.
+                  </p>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             <div className="flex flex-col gap-2 pt-2">
               <Button
@@ -580,6 +604,6 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   );
 }

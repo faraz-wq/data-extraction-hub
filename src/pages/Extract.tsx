@@ -3,6 +3,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { UploadForm } from '@/components/extract/UploadForm';
 import { ResultsView } from '@/components/extract/ResultsView';
 import { PDFViewerWithBoxes } from '@/components/extract/PDFViewerWithBoxes';
+import { PageTextDrawer } from '@/components/extract/PageTextDrawer';
 import { api, Schema, SessionDetail } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 
@@ -17,6 +18,7 @@ export default function Extract() {
   const [hoveredField, setHoveredField] = useState<string | null>(null);
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
+  const [isTextDrawerOpen, setIsTextDrawerOpen] = useState(false);
 
   // Derived state: hover takes precedence for preview, but selection persists
   const activeField = hoveredField || selectedField;
@@ -137,13 +139,29 @@ export default function Extract() {
                     onFieldClick={handleFieldClick}
                     page={pageNumber}
                     onPageChange={setPageNumber}
+                    onShowText={() => setIsTextDrawerOpen(true)}
                   />
                 </div>
               </div>
+
+              {/* Text Drawer */}
+              {uploadedFile && (
+                <PageTextDrawer
+                  isOpen={isTextDrawerOpen}
+                  onClose={() => setIsTextDrawerOpen(false)}
+                  pageNumber={pageNumber}
+                  filename={uploadedFile.name}
+                  text={
+                    extractionResult.page_text?.[`${uploadedFile.name}_page_${pageNumber}`] ||
+                    extractionResult.page_text?.[`page_${pageNumber}`] ||
+                    ""
+                  }
+                />
+              )}
             </div>
           )}
         </main>
-      </div>
-    </DashboardLayout>
+      </div >
+    </DashboardLayout >
   );
 }

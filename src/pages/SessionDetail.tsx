@@ -52,54 +52,59 @@ export default function SessionDetail() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="h-[calc(100vh-4rem)] flex flex-col gap-2">
-        {/* Slim Top Bar - Replace UploadForm with Session Info */}
-        <div className="flex items-center justify-between px-2 py-1 shrink-0 bg-muted/20 rounded-md border border-border/50">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" asChild className="h-7 w-7 p-0 hover:bg-muted transition-colors">
-              <Link to="/sessions" className="text-muted-foreground">←</Link>
-            </Button>
+    <DashboardLayout noPadding>
+      <div className="h-screen overflow-hidden flex flex-col bg-[#F2F2F7]">
+        <main className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          {/* Top Bar - Session Info */}
+          <div className="flex items-center justify-between px-4 py-2 shrink-0 bg-white border-b border-border/40 z-20">
             <div className="flex items-center gap-3">
-              <h1 className="text-xs font-bold text-foreground font-mono">
-                SESSION: {sessionId}
-              </h1>
-              {session && (
-                <>
-                  <Badge variant="outline" className="text-[10px] h-4 py-0 border-primary/20 bg-primary/5 text-primary">
-                    {session.application_type.replace('custom:', '')}
-                  </Badge>
-                  <span className="text-[10px] text-muted-foreground hidden sm:inline">
-                    • {new Date(session.created_at).toLocaleString()}
-                  </span>
-                </>
-              )}
+              <Button variant="ghost" size="sm" asChild className="h-7 w-7 p-0 hover:bg-muted transition-colors">
+                <Link to="/sessions" className="text-muted-foreground">←</Link>
+              </Button>
+              <div className="flex items-center gap-3">
+                <h1 className="text-sm font-bold text-foreground font-mono tracking-tight">
+                  SESSION: {sessionId}
+                </h1>
+                {session && (
+                  <>
+                    <Badge variant="outline" className="text-[10px] h-5 px-2 py-0 border-primary/20 bg-primary/5 text-primary rounded-md">
+                      {session.application_type.replace('custom:', '')}
+                    </Badge>
+                    <span className="text-[10px] text-muted-foreground hidden sm:inline font-mono">
+                      {new Date(session.created_at).toLocaleString()}
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Main Content - Structured exactly like Extract.tsx */}
-        <div className="flex-1 min-h-0">
           {session ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
-              <ResultsView
-                result={session}
-                onFieldHover={handleFieldHover}
-                onFieldClick={handleFieldClick}
-                highlightedField={activeField}
-                onPageClick={setPageNumber}
-              />
-              <PDFViewerWithBoxes
-                file={session.documents && session.documents.length > 0 ? session.documents[0].url : null}
-                boundingBoxes={session.bounding_boxes || {}}
-                highlightedField={activeField}
-                onFieldClick={handleFieldClick}
-                page={pageNumber}
-                onPageChange={setPageNumber}
-              />
+            <div className="flex-1 flex overflow-hidden scale-in">
+              <div className="w-[480px] border-r border-border/40 bg-white shadow-xl z-10 overflow-hidden flex flex-col">
+                <ResultsView
+                  result={session}
+                  onFieldHover={handleFieldHover}
+                  onFieldClick={handleFieldClick}
+                  highlightedField={activeField}
+                  onPageClick={setPageNumber}
+                />
+              </div>
+              <div className="flex-1 bg-[#8E8E93]/10 p-2 overflow-hidden flex flex-col">
+                <div className="flex-1 rounded-2xl overflow-hidden shadow-2xl ring-1 ring-black/5 bg-white">
+                  <PDFViewerWithBoxes
+                    file={session.documents && session.documents.length > 0 ? session.documents[0].url : null}
+                    boundingBoxes={session.bounding_boxes || {}}
+                    highlightedField={activeField}
+                    onFieldClick={handleFieldClick}
+                    page={pageNumber}
+                    onPageChange={setPageNumber}
+                  />
+                </div>
+              </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-full border border-dashed border-border rounded bg-muted/5">
+            <div className="flex items-center justify-center h-full">
               {isLoading ? (
                 <div className="text-center">
                   <div className="w-6 h-6 mx-auto mb-2 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -117,7 +122,7 @@ export default function SessionDetail() {
               )}
             </div>
           )}
-        </div>
+        </main>
       </div>
     </DashboardLayout>
   );
