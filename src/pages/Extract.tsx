@@ -52,11 +52,106 @@ export default function Extract() {
     setPageNumber(1);
 
     try {
-      let result;
+      let result: SessionDetail;
       if (type === 'schema') {
         result = await api.extract(id, files);
       } else {
-        result = await api.extractSummary(id, files);
+        // Use the new Universal Workflow via /validate-form
+        const report = await api.validateForm(id, files);
+
+        // ADAPTER: Transform UniversalResponse -> SessionDetail (Ui Model)
+        // This keeps the backend strict and the UI flexible.
+        const flatSummary: Record<string, any> = {};
+        const bboxes: Record<string, any[]> = {};
+        const citations: Record<string, string[]> = {};
+        const remarks: Record<string, string> = {};
+
+        // 1. Flatten Schema Projection -> Summary
+        report.schema_projection.ordered_fields.forEach(item => {
+          if (item.value !== null && item.value !== undefined) {
+            // Basic flattening helper (can be expanded if needed)
+            flatSummary[item.schema_field] = item.value;
+          }
+          if (item.reasoning) {
+            remarks[item.schema_field] = item.reasoning;
+          }
+        });
+
+        // 2. Build Bounding Boxes & Citations from Field Entities
+        const entityMap = new Map(report.field_entities.map(e => [e.field_id, e]));
+
+        report.schema_projection.ordered_fields.forEach(item => {
+          const derivedIds = item.derived_from || [];
+          const key = item.schema_field;
+
+          derivedIds.forEach(fid => {
+            const ent = entityMap.get(fid);
+            if (ent) {
+              // Bounding Boxes
+              if (ent.citation?.bounding_box && Array.isArray(ent.citation.bounding_box)) {
+                if (!bboxes[key]) bboxes[key] = [];
+
+                // Handle Block IDs (F1P1B1) vs Coordinates
+                // The backend should have resolved these, but if they are raw strings, we skip or handle differently.
+                // Assuming backend _resolve_citations ran and replaced them with coords.
+                // If not, we might fail to render them.
+                // Let's assume coords structure for now: [x, y, w, h] or similar.
+
+                ent.citation.bounding_box.forEach((box: any) => {
+                  bboxes[key].push({
+                    filename: ent.document.filename,
+                    page: ent.document.page,
+                    coordinates: box,
+                    document_title: ent.document.document_type
+                  });
+                });
+              }
+
+              // Citations (Text)
+              if (ent.citation?.text_snippet) {
+                if (!citations[key]) citations[key] = [];
+                citations[key].push(`${ent.document.filename} (Page ${ent.document.page}) - ${ent.citation.text_snippet}`);
+              }
+            }
+          });
+        });
+
+        // 3. Map Issues
+        // Issues format is strict now: { schema_field, severity, message }
+        // We map 'schema_field' to legacy 'field' property for UI
+        const mappedIssues = report.issues.map(i => ({
+          ...i,
+          field: i.schema_field // Map schema_field to field for UI
+        }));
+
+        // 4. Build flat page_text for backward compatibility
+        const flatPageText: Record<string, string> = {};
+        report.documents.forEach(doc => {
+          doc.pages?.forEach((p: any) => {
+            flatPageText[`${doc.filename}_page_${p.page_number}`] = p.text;
+            // Also add a generic page_N key if it's the only doc (optional but sometimes used)
+            if (report.documents.length === 1) {
+              flatPageText[`page_${p.page_number}`] = p.text;
+            }
+          });
+        });
+
+        result = {
+          session_id: report.metadata?.extraction_session_id || report.metadata?.validation_id || `temp-${Date.now()}`,
+          application_type: id,
+          created_at: new Date().toISOString(),
+          file_count: files.length,
+          summary: flatSummary,
+          bounding_boxes: bboxes,
+          citations: citations,
+          documents: [],
+          source_documents: report.documents || [],
+          issues: mappedIssues,
+          validation_summary: `Confidence: ${Math.round((report.validation_summary?.confidence_score || 0) * 100)}%`,
+          page_text: flatPageText,
+          field_remarks: remarks,
+          errors: []
+        };
       }
 
       setExtractionResult(result);
@@ -81,8 +176,8 @@ export default function Extract() {
       }
 
       toast({
-        title: 'Extraction Complete',
-        description: `Successfully extracted ${Object.keys(result.summary || {}).length} fields`,
+        title: 'Universal Extraction Complete',
+        description: `Successfully extracted ${Object.keys(result.summary || {}).length} fields (Schema + Supplementary)`,
       });
     } catch (error) {
       toast({

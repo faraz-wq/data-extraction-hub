@@ -75,47 +75,41 @@ export function PDFViewerWithBoxes({
   const PADDING = 2;
 
   const boxes = useMemo(() => {
-    if (!pageWidth || !pageHeight) return [];
-
     return Object.entries(boundingBoxes).flatMap(([field, fieldBoxes]) => {
       const boxList = Array.isArray(fieldBoxes) ? fieldBoxes : [fieldBoxes];
 
       return boxList.map((box, index) => {
         const [y_min, x_min, y_max, x_max] = box.coordinates;
+        // Check if the coordinates are on 0-1 scale or 0-1000 scale
         const is1000Scale = [y_min, x_min, y_max, x_max].some(c => c > 2);
 
-        let x, y, width, height;
+        // Calculate percentage values (0-100%)
+        let left, top, width, height;
 
         if (is1000Scale) {
-          x = (x_min / 1000) * pageWidth;
-          y = (y_min / 1000) * pageHeight;
-          width = ((x_max - x_min) / 1000) * pageWidth;
-          height = ((y_max - y_min) / 1000) * pageHeight;
+          left = x_min / 10;
+          top = y_min / 10;
+          width = (x_max - x_min) / 10;
+          height = (y_max - y_min) / 10;
         } else {
-          x = x_min * pageWidth;
-          y = y_min * pageHeight;
-          width = (x_max - x_min) * pageWidth;
-          height = (y_max - y_min) * pageHeight;
+          left = x_min * 100;
+          top = y_min * 100;
+          width = (x_max - x_min) * 100;
+          height = (y_max - y_min) * 100;
         }
-
-        // Add padding
-        const paddedX = Math.max(0, x - PADDING);
-        const paddedY = Math.max(0, y - PADDING);
-        const paddedWidth = width + (PADDING * 2);
-        const paddedHeight = height + (PADDING * 2);
 
         return {
           field,
           index,
           page: box.page,
-          x: paddedX,
-          y: paddedY,
-          width: paddedWidth,
-          height: paddedHeight,
+          left,
+          top,
+          width,
+          height,
         };
       });
     });
-  }, [boundingBoxes, pageWidth, pageHeight]);
+  }, [boundingBoxes]);
 
   const allHighlightBoxes = useMemo(() =>
     boxes.filter(box => box.field === highlightedField),
@@ -240,10 +234,10 @@ export function PDFViewerWithBoxes({
                       : 'border-[#5856D6]/40 bg-[#5856D6]/5 hover:bg-[#5856D6]/10 z-10'
                 )}
                 style={{
-                  left: `${box.x * scale}px`,
-                  top: `${box.y * scale}px`,
-                  width: `${box.width * scale}px`,
-                  height: `${box.height * scale}px`,
+                  left: `calc(${box.left}% - 2px)`,
+                  top: `calc(${box.top}% - 2px)`,
+                  width: `calc(${box.width}% + 4px)`,
+                  height: `calc(${box.height}% + 4px)`,
                 }}
                 onClick={() => onFieldClick?.(box.field)}
               >

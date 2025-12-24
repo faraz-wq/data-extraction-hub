@@ -126,6 +126,7 @@ interface SchemaListResponse {
 }
 
 interface ValidationIssue {
+  schema_field?: string;
   field: string;
   severity: 'error' | 'warning' | 'info';
   message: string;
@@ -135,22 +136,50 @@ interface ValidationIssue {
   requires_review: boolean;
 }
 
-interface ValidationReport {
-  auto_approved: boolean;
-  confidence_score: number;
-  issues: ValidationIssue[];
-  summary: string | null;
-  page_text?: Record<string, string>;
-  metadata: {
-    application_type: string;
-    rule_set_version?: string;
-    total_issues: number;
-    error_count: number;
-    warning_count: number;
-    info_count: number;
-    validation_id?: string;
-  };
+// Universal Extraction Types (Strict)
+interface FieldEntity {
+  field_id: string;
+  field_name: string;
+  field_value: any;
+  document: { filename: string; page: number; document_type: string };
+  citation: { bounding_box: string[] | number[][]; text_snippet: string };
+  role: 'application_claim' | 'proof' | 'contextual';
+  confidence: number;
 }
+
+interface SchemaProjectionItem {
+  schema_field: string;
+  value: any;
+  derived_from: string[];
+  confidence: number;
+  reasoning: string;
+}
+
+interface ValidationSummary {
+  total_schema_fields: number;
+  validated_fields: number;
+  errors: number;
+  warnings: number;
+  confidence_score: number;
+}
+
+interface UniversalResponse {
+  application_type: string;
+  documents: any[];
+  field_entities: FieldEntity[];
+  field_relationships: any[];
+  schema_projection: {
+    schema_name: string;
+    ordered_fields: SchemaProjectionItem[];
+    unmapped_fields: FieldEntity[];
+  };
+  validation_summary: ValidationSummary;
+  issues: ValidationIssue[];
+  metadata: Record<string, any>;
+}
+
+// Legacy Alias (deprecated but used in other parts)
+type ValidationReport = UniversalResponse;
 
 interface ValidationRules {
   application_type: string;
@@ -498,7 +527,7 @@ class ApiClient {
   }
 
   // Validation endpoints
-  async validateForm(applicationType: string, files: File[]): Promise<ValidationReport> {
+  async validateForm(applicationType: string, files: File[]): Promise<UniversalResponse> {
     const formData = new FormData();
     formData.append('application_type', applicationType);
     files.forEach((file) => formData.append('files', file));
@@ -625,4 +654,4 @@ class ApiClient {
 }
 
 export const api = new ApiClient();
-export type { Stats, Session, SessionDetail, Schema, SchemaField, ApiKey, LogEntry, MetricPoint, User, BoundingBox, ValidationReport, ValidationIssue, ValidationRules };
+export type { Stats, Session, SessionDetail, Schema, SchemaField, ApiKey, LogEntry, MetricPoint, User, BoundingBox, ValidationReport, UniversalResponse, FieldEntity, ValidationIssue, ValidationRules };
