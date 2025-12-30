@@ -87,6 +87,7 @@ export default function SessionDetail() {
                   onFieldHover={handleFieldHover}
                   onFieldClick={handleFieldClick}
                   highlightedField={activeField}
+                  selectedField={selectedField}
                   onPageClick={setPageNumber}
                 />
               </div>

@@ -252,6 +252,7 @@ export default function Extract() {
                   onFieldHover={handleFieldHover}
                   onFieldClick={handleFieldClick}
                   highlightedField={activeField}
+                  selectedField={selectedField}
                   onPageClick={setPageNumber}
                 />
               </div>

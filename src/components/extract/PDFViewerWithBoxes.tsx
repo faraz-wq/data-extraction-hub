@@ -230,7 +230,7 @@ export function PDFViewerWithBoxes({
                   isActive
                     ? 'border-[#5856D6] bg-[#5856D6]/20 z-30 scale-[1.02] shadow-[0_0_15px_rgba(88,86,214,0.3)]'
                     : isHighlighted
-                      ? 'border-[#5856D6]/60 bg-[#5856D6]/10 z-20 opacity-60'
+                      ? 'border-[#5856D6] bg-[#5856D6]/15 z-20 shadow-[0_0_10px_rgba(88,86,214,0.2)]'
                       : 'border-[#5856D6]/40 bg-[#5856D6]/5 hover:bg-[#5856D6]/10 z-10'
                 )}
                 style={{
@@ -241,13 +241,13 @@ export function PDFViewerWithBoxes({
                 }}
                 onClick={() => onFieldClick?.(box.field)}
               >
-                {isActive && (
+                {isHighlighted && (
                   <div className="absolute -top-6 left-0 flex items-center gap-1.5 px-2 py-1 bg-[#5856D6] text-white text-[9px] font-bold rounded-md shadow-lg whitespace-nowrap z-30 animate-in fade-in zoom-in duration-200">
                     <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
                     {box.field.replace(/_/g, ' ').toUpperCase()}
                     {allHighlightBoxes.length > 1 && (
                       <span className="opacity-60 border-l border-white/20 pl-1.5 ml-0.5">
-                        {activeBoxIndex + 1} OF {allHighlightBoxes.length}
+                        {allHighlightBoxes.findIndex(b => b.page === box.page && b.index === box.index) + 1} OF {allHighlightBoxes.length}
                       </span>
                     )}
                   </div>

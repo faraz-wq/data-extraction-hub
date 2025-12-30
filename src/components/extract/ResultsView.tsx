@@ -24,6 +24,7 @@ interface ResultsViewProps {
   onFieldHover?: (field: string | null) => void;
   onFieldClick?: (field: string) => void;
   highlightedField?: string | null;
+  selectedField?: string | null;
   onPageClick?: (page: number) => void;
 }
 
@@ -56,7 +57,7 @@ function flattenObject(obj: any, prefix = '', res: Record<string, any> = {}) {
   return res;
 }
 
-export function ResultsView({ result, onFieldHover, onFieldClick, highlightedField, onPageClick }: ResultsViewProps) {
+export function ResultsView({ result, onFieldHover, onFieldClick, highlightedField, selectedField, onPageClick }: ResultsViewProps) {
   const [feedbackState, setFeedbackState] = useState<Record<string, { type: 'upvote' | 'downvote', text?: string }>>({});
   const [loadingFeedback, setLoadingFeedback] = useState<Record<string, boolean>>({});
   const [feedbackText, setFeedbackText] = useState<Record<string, string>>({});
@@ -164,16 +165,17 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
                   onClick={(e) => {
                     e.stopPropagation();
                     onPageClick?.(loc.page);
+                    onFieldClick?.(fieldName);
                   }}
                   onMouseEnter={(e) => {
                     e.stopPropagation();
                     onPageClick?.(loc.page);
+                    onFieldHover?.(fieldName);
                   }}
                   onMouseLeave={(e) => {
                     e.stopPropagation();
-                    onPageClick?.(defaultApplicationPage);
                   }}
-                  title="Click or hover to jump to page"
+                  title="Click to view proof, hover to preview"
                 >
                   {loc.text}{i < proofCitations.length - 1 ? ',' : ''}
                 </span>
@@ -422,6 +424,8 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
           <div className="divide-y divide-border/20">
             {Object.entries(flattenedSummary).map(([key, value]) => {
               const isHighlighted = highlightedField === key;
+              const isSelected = selectedField === key;
+              const isHoveredOnly = isHighlighted && !isSelected;
               const isRejected = fieldStatuses[key] === 'rejected';
 
               const fieldIssues = (result.issues || []).filter(i => i.field === key);
@@ -436,13 +440,15 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
                   key={key}
                   className={cn(
                     'px-2 py-1 transition-all duration-300 cursor-pointer relative group',
-                    isHighlighted
-                      ? 'bg-[#5856D6]/5 border-l-2 border-[#5856D6]'
-                      : isRejected
-                        ? 'bg-red-500/[0.08] border-l-2 border-red-500'
-                        : fieldConflict
-                          ? 'bg-amber-500/[0.1] border-l-2 border-amber-500'
-                          : 'hover:bg-[#F2F2F7]/40 border-l-2 border-transparent'
+                    isSelected
+                      ? 'bg-[#5856D6]/10 border-l-2 border-[#5856D6]'
+                      : isHoveredOnly
+                        ? 'bg-[#5856D6]/5 border-l-2 border-[#5856D6]/60'
+                        : isRejected
+                          ? 'bg-red-500/[0.08] border-l-2 border-red-500'
+                          : fieldConflict
+                            ? 'bg-amber-500/[0.1] border-l-2 border-amber-500'
+                            : 'hover:bg-[#F2F2F7]/40 border-l-2 border-transparent'
                   )}
                   onClick={() => onFieldClick?.(key)}
                   onMouseEnter={() => onFieldHover?.(key)}
@@ -567,15 +573,19 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
                 <div className="divide-y divide-border/20 bg-muted/5 animate-in fade-in slide-in-from-top-2 duration-300">
                   {Object.entries(flattenedUnmappedSummary).map(([key, value]) => {
                     const isHighlighted = highlightedField === key;
+                    const isSelected = selectedField === key;
+                    const isHoveredOnly = isHighlighted && !isSelected;
 
                     return (
                       <div
                         key={key}
                         className={cn(
                           'px-4 py-2 transition-all duration-300 cursor-pointer relative group',
-                          isHighlighted
-                            ? 'bg-purple-500/5 border-l-2 border-purple-500'
-                            : 'hover:bg-[#F2F2F7]/60 border-l-2 border-transparent'
+                          isSelected
+                            ? 'bg-purple-500/10 border-l-2 border-purple-500'
+                            : isHoveredOnly
+                              ? 'bg-purple-500/5 border-l-2 border-purple-500/60'
+                              : 'hover:bg-[#F2F2F7]/60 border-l-2 border-transparent'
                         )}
                         onClick={() => onFieldClick?.(key)}
                         onMouseEnter={() => onFieldHover?.(key)}
