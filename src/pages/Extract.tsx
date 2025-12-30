@@ -246,7 +246,7 @@ export default function Extract() {
             </div>
           ) : (
             <div className="flex-1 flex overflow-hidden scale-in">
-              <div className="w-[340px] border-r border-border/40 bg-white shadow-xl z-10 overflow-hidden flex flex-col">
+              <div className="w-[640px] border-r border-border/40 bg-white shadow-xl z-10 overflow-hidden flex flex-col">
                 <ResultsView
                   result={extractionResult}
                   onFieldHover={handleFieldHover}
