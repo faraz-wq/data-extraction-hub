@@ -225,7 +225,8 @@ export default function Extract() {
   };
 
   const handleFieldClick = (field: string) => {
-    setSelectedField(field);
+    // Toggle selection: if clicking the same field, deselect it
+    setSelectedField(prev => prev === field ? null : field);
   };
 
   return (
@@ -254,6 +255,7 @@ export default function Extract() {
                   highlightedField={activeField}
                   selectedField={selectedField}
                   onPageClick={setPageNumber}
+                  currentPage={pageNumber}
                 />
               </div>
               <div className="flex-1 bg-[#8E8E93]/10 p-2 overflow-hidden flex flex-col">

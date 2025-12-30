@@ -5,7 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { api, SessionDetail } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import { ThumbsUp, ThumbsDown, AlertCircle, Check, MessageSquare, Layout, FileText, Sparkles, Flag } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, AlertCircle, Check, MessageSquare, Layout, FileText, Sparkles, Flag, ChevronDown, ChevronRight, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
@@ -26,6 +26,7 @@ interface ResultsViewProps {
   highlightedField?: string | null;
   selectedField?: string | null;
   onPageClick?: (page: number) => void;
+  currentPage?: number;
 }
 
 function flattenObject(obj: any, prefix = '', res: Record<string, any> = {}) {
@@ -57,7 +58,7 @@ function flattenObject(obj: any, prefix = '', res: Record<string, any> = {}) {
   return res;
 }
 
-export function ResultsView({ result, onFieldHover, onFieldClick, highlightedField, selectedField, onPageClick }: ResultsViewProps) {
+export function ResultsView({ result, onFieldHover, onFieldClick, highlightedField, selectedField, onPageClick, currentPage }: ResultsViewProps) {
   const [feedbackState, setFeedbackState] = useState<Record<string, { type: 'upvote' | 'downvote', text?: string }>>({});
   const [loadingFeedback, setLoadingFeedback] = useState<Record<string, boolean>>({});
   const [feedbackText, setFeedbackText] = useState<Record<string, string>>({});
@@ -65,6 +66,7 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
   const [fieldStatuses, setFieldStatuses] = useState<Record<string, 'accepted' | 'rejected' | null>>({});
   const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [showUnmappedFields, setShowUnmappedFields] = useState(false);
+  const [showInsights, setShowInsights] = useState(false);
 
   const navigate = useNavigate();
 
@@ -155,31 +157,39 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
         <div className="mt-1 text-wrap">
           {proofCitations.length > 0 && (
             <div className="flex items-baseline gap-1 flex-wrap">
-              <span className="text-[9px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider shrink-0">
-                Proofs:
+              <span className="text-[9px] font-medium text-gray-500 shrink-0">
+                Source:
               </span>
-              {proofCitations.map((loc, i) => (
-                <span
-                  key={`proof-${i}`}
-                  className="text-[10px] text-muted-foreground italic hover:text-primary hover:underline cursor-pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onPageClick?.(loc.page);
-                    onFieldClick?.(fieldName);
-                  }}
-                  onMouseEnter={(e) => {
-                    e.stopPropagation();
-                    onPageClick?.(loc.page);
-                    onFieldHover?.(fieldName);
-                  }}
-                  onMouseLeave={(e) => {
-                    e.stopPropagation();
-                  }}
-                  title="Click to view proof, hover to preview"
-                >
-                  {loc.text}{i < proofCitations.length - 1 ? ',' : ''}
-                </span>
-              ))}
+              {proofCitations.map((loc, i) => {
+                const isActivePage = currentPage === loc.page;
+                return (
+                  <span
+                    key={`proof-${i}`}
+                    className={cn(
+                      "text-[10px] italic cursor-pointer transition-all px-1.5 py-0.5 rounded",
+                      isActivePage
+                        ? "bg-indigo-100 text-indigo-900 font-semibold"
+                        : "text-gray-600 hover:text-indigo-600 hover:bg-indigo-50"
+                    )}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPageClick?.(loc.page);
+                      onFieldClick?.(fieldName);
+                    }}
+                    onMouseEnter={(e) => {
+                      e.stopPropagation();
+                      onPageClick?.(loc.page);
+                      onFieldHover?.(fieldName);
+                    }}
+                    onMouseLeave={(e) => {
+                      e.stopPropagation();
+                    }}
+                    title={isActivePage ? "Currently viewing this proof" : "Click to view proof"}
+                  >
+                    {loc.text}{i < proofCitations.length - 1 ? ',' : ''}
+                  </span>
+                );
+              })}
             </div>
           )}
         </div>
@@ -268,120 +278,113 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
 
   return (
     <div className="h-full flex flex-col bg-white overflow-hidden">
-      {/* iOS Style Glass Header */}
-      <div className="px-4 py-3 border-b border-border/40 bg-white/80 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between shrink-0 shadow-sm">
-        <div className="flex flex-col min-w-0">
-          <h2 className="text-[12px] font-bold text-foreground leading-tight tracking-tight uppercase">
-            {result.application_type?.replace('custom:', '') || (result as any).application_type?.replace('custom:', '') || 'N/A'}
+      {/* Simplified Header */}
+      <div className="px-4 py-3 border-b border-border/20 bg-white sticky top-0 z-20 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <h2 className="text-sm font-semibold text-foreground">
+            {result.application_type?.replace('custom:', '') || (result as any).application_type?.replace('custom:', '') || 'Document Review'}
           </h2>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center gap-1.5 cursor-help">
-                    <div className={cn(
-                      "w-1.5 h-1.5 rounded-full",
-                      (result as any).confidence_score >= 0.9 ? "bg-green-500" :
-                        (result as any).confidence_score >= 0.7 ? "bg-amber-500" : "bg-red-500"
-                    )} />
-                    <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-tighter truncate">
-                      {(result as any).confidence_score ? `${Math.round((result as any).confidence_score * 100)}% Confidence` : "Live Workspace"}
-                    </span>
-                  </div>
-                </TooltipTrigger>
-                {(result as any).confidence_reason && (
-                  <TooltipContent side="bottom" className="bg-black text-white text-[10px] p-2 rounded-xl border-none shadow-2xl max-w-[200px]">
-                    {(result as any).confidence_reason}
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
-            <span className="text-[9px] text-muted-foreground/30 opacity-50 px-1">•</span>
-            <span className="text-[8px] font-black tracking-widest uppercase opacity-70">
-              {(result as any).confidence_score >= 0.9 ? "Verified" : "Needs Review"}
-            </span>
+          <div className={cn(
+            "px-2 py-0.5 rounded-full text-[10px] font-medium",
+            (result as any).confidence_score >= 0.9 ? "bg-green-100 text-green-700" :
+              (result as any).confidence_score >= 0.7 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"
+          )}>
+            {(result as any).confidence_score ? `${Math.round((result as any).confidence_score * 100)}%` : "—"}
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Button
             variant="outline"
             size="sm"
-            className="h-7 px-3 text-[10px] font-bold border-green-500/20 text-green-700 bg-green-500/5 hover:bg-green-500/10 rounded-full transition-all"
+            className="h-8 px-3 text-xs"
             onClick={handleAcceptAll}
           >
-            VERIFY ALL
+            Verify All
           </Button>
           <Button
             variant="default"
             size="sm"
-            className="h-7 px-4 text-[10px] font-bold bg-black hover:bg-black/90 text-white rounded-full shadow-md transition-all"
+            className="h-8 px-4 text-xs bg-black hover:bg-black/90 text-white"
             onClick={() => setShowSummaryModal(true)}
           >
-            DONE
+            Done
           </Button>
         </div>
       </div>
 
 
-      {/* Two Column Layout: Validation Summary (Left) + Fields Explorer (Right) */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Column: Validation Summary & Field Remarks */}
-        {(result.validation_summary || (result.field_remarks && Object.keys(result.field_remarks).length > 0)) && (
-          <div className="w-[50%] border-r border-border/30 bg-gradient-to-b from-indigo-50/30 to-white overflow-y-auto custom-scrollbar">
-            <div className="p-1">
-              {/* Header */}
-              <div className="text-[9px] font-black uppercase tracking-widest text-indigo-900/50">
-                Validation Insights
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Collapsible Insights Panel */}
+        {(result.validation_summary || (result.issues && result.issues.length > 0) || (result.field_remarks && Object.keys(result.field_remarks).length > 0)) && (
+          <div className="border-b border-border/20">
+            <button
+              onClick={() => setShowInsights(!showInsights)}
+              className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Info className="w-4 h-4 text-indigo-600" />
+                <span className="text-sm font-medium text-foreground">
+                  Validation Insights
+                </span>
+                {result.issues && result.issues.length > 0 && (
+                  <Badge variant="destructive" className="h-5 text-[10px] px-1.5">
+                    {result.issues.length} {result.issues.length === 1 ? 'Issue' : 'Issues'}
+                  </Badge>
+                )}
               </div>
+              {showInsights ? (
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              )}
+            </button>
 
-
-              {/* AI Summary */}
-              {result.validation_summary && (
-                <div className="px-1 py-1">
-                  <div className="flex gap-1 items-start">
-                    <Sparkles className="w-3.5 h-3.5 text-indigo-600 mt-0.5 shrink-0 opacity-70" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[8px] font-bold uppercase tracking-wide text-indigo-800/90 mb-1">
-                        AI Summary
-                      </div>
-                      <div className="text-[10px] font-medium text-indigo-900/90 leading-relaxed">
-                        {result.validation_summary}
+            {showInsights && (
+              <div className="px-4 pb-4 space-y-4 bg-gray-50/50 animate-in fade-in slide-in-from-top-2">
+                {/* AI Summary */}
+                {result.validation_summary && (
+                  <div className="bg-white rounded-lg p-3 border border-border/30">
+                    <div className="flex items-start gap-2">
+                      <Sparkles className="w-4 h-4 text-indigo-600 mt-0.5 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium text-indigo-900 mb-1">
+                          AI Summary
+                        </div>
+                        <div className="text-sm text-gray-700 leading-relaxed">
+                          {result.validation_summary}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Issues Summary */}
-              {(() => {
-                const issues = result.issues || [];
-                if (issues.length === 0) return null;
-
-                return (
-                  <div className="px-2 py-2">
-                    <div className="text-[8px] font-bold uppercase tracking-wide text-red-700/60 mb-2">
-                      Issues Detected ({issues.length})
+                {/* Issues */}
+                {result.issues && result.issues.length > 0 && (
+                  <div className="bg-white rounded-lg p-3 border border-red-200">
+                    <div className="text-xs font-medium text-red-900 mb-2">
+                      Issues Detected ({result.issues.length})
                     </div>
                     <div className="space-y-2">
-                      {issues.map((issue, idx) => (
+                      {result.issues.map((issue, idx) => (
                         <div
                           key={idx}
                           className={cn(
-                            "pl-3 py-1 border-l-2",
+                            "pl-3 py-2 border-l-2 rounded-r",
                             issue.severity === 'error'
-                              ? "border-red-400/50"
-                              : "border-amber-400/50"
+                              ? "border-red-500 bg-red-50/50"
+                              : "border-amber-500 bg-amber-50/50"
                           )}
                         >
                           <div className={cn(
-                            "text-[8px] font-bold uppercase tracking-wide mb-0.5 opacity-80",
-                            issue.severity === 'error' ? "text-red-700" : "text-amber-700"
+                            "text-xs font-medium mb-0.5",
+                            issue.severity === 'error' ? "text-red-900" : "text-amber-900"
                           )}>
                             {issue.field || issue.schema_field}
                           </div>
                           <div className={cn(
-                            "text-[9px] leading-snug",
-                            issue.severity === 'error' ? "text-red-900/70" : "text-amber-900/70"
+                            "text-sm",
+                            issue.severity === 'error' ? "text-red-700" : "text-amber-700"
                           )}>
                             {issue.message}
                           </div>
@@ -389,243 +392,212 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
                       ))}
                     </div>
                   </div>
-                );
-              })()}
-              {/* Field Observations */}
-              {result.field_remarks && Object.entries(result.field_remarks).length > 0 && (
-                <div className="px-1 py-1">
-                  <div className="text-[8px] font-bold uppercase tracking-wide text-indigo-700/60 mb-2">
-                    Field Observations ({Object.entries(result.field_remarks).length})
-                  </div>
-                  <div className="space-y-1">
-                    {Object.entries(result.field_remarks).map(([field, remark], idx) => (
-                      <div key={idx} className="pl-1 py-1 border-l-2 border-indigo-300/40">
-                        <div className="text-[8px] font-bold text-indigo-700 uppercase tracking-wide ">
-                          {field.replace(/_/g, ' ')}
-                        </div>
-                        <div className="text-[10px] text-indigo-900/90 leading-snug">
-                          {remark}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                )}
 
-            </div>
+                {/* Field Remarks */}
+                {result.field_remarks && Object.entries(result.field_remarks).length > 0 && (
+                  <div className="bg-white rounded-lg p-3 border border-border/30">
+                    <div className="text-xs font-medium text-indigo-900 mb-2">
+                      Field Observations ({Object.entries(result.field_remarks).length})
+                    </div>
+                    <div className="space-y-2">
+                      {Object.entries(result.field_remarks).map(([field, remark], idx) => (
+                        <div key={idx} className="pl-3 py-2 border-l-2 border-indigo-300 bg-indigo-50/30 rounded-r">
+                          <div className="text-xs font-medium text-indigo-900 mb-0.5">
+                            {formatFieldName(field)}
+                          </div>
+                          <div className="text-sm text-indigo-700">
+                            {remark}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
-        {/* Right Column: Fields Explorer */}
-        <div className={cn(
-          "flex-1 overflow-y-auto custom-scrollbar bg-white",
-          !(result.validation_summary || (result.field_remarks && Object.keys(result.field_remarks).length > 0)) && "w-full"
-        )}>
-          <div className="divide-y divide-border/20">
-            {Object.entries(flattenedSummary).map(([key, value]) => {
-              const isHighlighted = highlightedField === key;
-              const isSelected = selectedField === key;
-              const isHoveredOnly = isHighlighted && !isSelected;
-              const isRejected = fieldStatuses[key] === 'rejected';
+        {/* Simplified Fields List */}
+        <div className="divide-y divide-border/10">
+          {Object.entries(flattenedSummary).map(([key, value]) => {
+            const isHighlighted = highlightedField === key;
+            const isSelected = selectedField === key;
+            const isRejected = fieldStatuses[key] === 'rejected';
+            const fieldIssues = (result.issues || []).filter(i => i.field === key || i.schema_field === key);
+            const hasIssue = fieldIssues.length > 0;
 
-              const fieldIssues = (result.issues || []).filter(i => i.field === key);
-
-              const fieldConflict = fieldIssues[0] || result.errors?.find((e: any) =>
-                (typeof e === 'object' && e?.field === key) ||
-                (typeof e === 'string' && e.includes(key))
-              );
-
-              return (
-                <div
-                  key={key}
-                  className={cn(
-                    'px-2 py-1 transition-all duration-300 cursor-pointer relative group',
-                    isSelected
-                      ? 'bg-[#5856D6]/10 border-l-2 border-[#5856D6]'
-                      : isHoveredOnly
-                        ? 'bg-[#5856D6]/5 border-l-2 border-[#5856D6]/60'
-                        : isRejected
-                          ? 'bg-red-500/[0.08] border-l-2 border-red-500'
-                          : fieldConflict
-                            ? 'bg-amber-500/[0.1] border-l-2 border-amber-500'
-                            : 'hover:bg-[#F2F2F7]/40 border-l-2 border-transparent'
-                  )}
-                  onClick={() => onFieldClick?.(key)}
-                  onMouseEnter={() => onFieldHover?.(key)}
-                  onMouseLeave={() => onFieldHover?.(null)}
-                >
-                  <div className="flex flex-col space-y-0.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className={cn(
-                          "text-[10px] font-bold uppercase tracking-tight break-all transition-colors",
-                          isHighlighted ? "text-[#5856D6]" : "text-muted-foreground/60"
-                        )}>
-                          {formatFieldName(key)}
-                        </span>
-
-                        {fieldConflict && (
-                          <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          className="h-4 px-1.5 text-[8px] font-bold hover:text-black text-muted-foreground/40 transition-all uppercase opacity-0 group-hover:opacity-100"
-                          onClick={() => copyToClipboard(renderValue(value))}
-                        >
-                          Copy
-                        </button>
-                        <button
-                          className={cn(
-                            "h-5 px-2 text-[8px] font-bold transition-all uppercase rounded-md flex items-center gap-1.5 border",
-                            isRejected
-                              ? "bg-red-500 text-white border-red-500 shadow-sm"
-                              : "bg-white text-muted-foreground border-border hover:border-red-500/50 hover:text-red-600 hover:bg-red-50 shadow-sm"
-                          )}
-                          onClick={() => toggleIssue(key)}
-                        >
-                          <Flag className={cn("w-2.5 h-2.5", isRejected && "fill-current")} />
-                          {isRejected ? 'Flagged' : 'Flag'}
-                        </button>
-                      </div>
+            return (
+              <div
+                key={key}
+                className={cn(
+                  'px-4 py-3 transition-all cursor-pointer',
+                  isSelected
+                    ? 'bg-indigo-50 border-l-4 border-indigo-500'
+                    : isHighlighted
+                      ? 'bg-indigo-50/50 border-l-4 border-indigo-300'
+                      : isRejected
+                        ? 'bg-red-50 border-l-4 border-red-500'
+                        : hasIssue
+                          ? 'bg-amber-50/50 border-l-4 border-amber-400'
+                          : 'hover:bg-gray-50 border-l-4 border-transparent'
+                )}
+                onClick={() => onFieldClick?.(key)}
+                onMouseEnter={() => onFieldHover?.(key)}
+                onMouseLeave={() => onFieldHover?.(null)}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    {/* Field Name */}
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-medium text-gray-600">
+                        {formatFieldName(key)}
+                      </span>
+                      {hasIssue && (
+                        <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+                      )}
                     </div>
 
-                    <div className={cn(
-                      "text-[12px] font-bold break-words leading-tight tracking-tight",
-                      isHighlighted ? "text-black" : "text-foreground"
-                    )}>
+                    {/* Field Value */}
+                    <div className="text-sm font-semibold text-gray-900 mb-1">
                       {renderValue(value)}
                     </div>
 
-                    {/* Field-Specific Validation Results */}
-                    {isHighlighted && fieldIssues.length > 0 && (
-                      <div className="mt-2 space-y-1.5 animate-in fade-in slide-in-from-top-1">
-                        {fieldIssues.map((issue, idx) => (
-                          <div
-                            key={idx}
-                            className={cn(
-                              "p-2 rounded-xl border text-[9px] font-bold leading-snug",
-                              issue.severity === 'error'
-                                ? "bg-red-500/5 border-red-500/10 text-red-700"
-                                : "bg-amber-500/5 border-amber-500/10 text-amber-700"
-                            )}
-                          >
-                            <div className="flex items-start gap-2">
-                              <div className={cn(
-                                "w-1 h-1 rounded-full mt-1 shrink-0",
-                                issue.severity === 'error' ? "bg-red-500" : "bg-amber-500"
-                              )} />
-                              {issue.message}
-                            </div>
+                    {/* Show details only when highlighted or selected */}
+                    {(isHighlighted || isSelected) && (
+                      <div className="mt-2 space-y-2 animate-in fade-in slide-in-from-top-1">
+                        {/* Citation */}
+                        {renderCitation(key)}
+
+                        {/* Field Issues */}
+                        {fieldIssues.length > 0 && (
+                          <div className="space-y-1">
+                            {fieldIssues.map((issue, idx) => (
+                              <div
+                                key={idx}
+                                className={cn(
+                                  "p-2 rounded text-xs",
+                                  issue.severity === 'error'
+                                    ? "bg-red-100 text-red-800"
+                                    : "bg-amber-100 text-amber-800"
+                                )}
+                              >
+                                {issue.message}
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        )}
+
+                        {/* Field Remarks */}
+                        {result.field_remarks?.[key] && (
+                          <div className="p-2 rounded bg-indigo-100 text-indigo-800 text-xs flex items-start gap-2">
+                            <Sparkles className="w-3 h-3 shrink-0 mt-0.5" />
+                            <span>{result.field_remarks[key]}</span>
+                          </div>
+                        )}
                       </div>
                     )}
+                  </div>
 
-                    {fieldConflict && isHighlighted && !fieldIssues.length && (
-                      <div className="mt-1.5 p-2 rounded-xl bg-amber-500/10 text-[9px] text-amber-700 font-bold border border-amber-500/10 leading-snug animate-in fade-in slide-in-from-top-1">
-                        {typeof fieldConflict === 'object' ? fieldConflict.message : fieldConflict}
-                      </div>
-                    )}
-
-                    {/* AI Observation / Field Remarks */}
-                    {isHighlighted && result.field_remarks?.[key] && (
-                      <div className="mt-1.5 p-2 rounded-xl bg-[#5856D6]/5 text-[9px] text-[#5856D6] font-bold border border-[#5856D6]/10 leading-snug animate-in fade-in slide-in-from-top-1">
-                        <div className="flex items-start gap-2">
-                          <Sparkles className="w-2.5 h-2.5 shrink-0 mt-0.5 opacity-60" />
-                          {result.field_remarks[key]}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="opacity-60 transition-opacity">
-                      {renderCitation(key)}
-                    </div>
+                  {/* Actions */}
+                  <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      className={cn(
+                        "h-7 px-2 text-[10px] font-medium transition-all rounded flex items-center gap-1 border",
+                        isRejected
+                          ? "bg-red-500 text-white border-red-500"
+                          : "bg-white text-gray-600 border-gray-200 hover:border-red-400 hover:text-red-600"
+                      )}
+                      onClick={() => toggleIssue(key)}
+                    >
+                      <Flag className={cn("w-3 h-3", isRejected && "fill-current")} />
+                      {isRejected ? 'Flagged' : 'Flag'}
+                    </button>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
+        </div>
 
-          {/* Supplementary Extracted Fields (Fields with Bounding Boxes not in Schema) */}
-          {Object.keys(flattenedUnmappedSummary).length > 0 && (
-            <div className="border-t border-border/20">
-              <button
-                onClick={() => setShowUnmappedFields(!showUnmappedFields)}
-                className="w-full px-4 py-3 flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:bg-[#F2F2F7]/40 transition-all bg-muted/5 group"
-              >
-                <div className="flex items-center gap-2">
-                  <FileText className="w-3.5 h-3.5 opacity-50" />
-                  <span>Supplementary Data ({Object.keys(flattenedUnmappedSummary).length})</span>
-                  {showUnmappedFields && (
-                    <Badge variant="outline" className="h-4 text-[7px] bg-purple-500/5 text-purple-600 border-purple-500/20 rounded-full px-1.5 ml-1">
-                      ALL EVIDENCED
-                    </Badge>
-                  )}
-                </div>
-                <span className="text-[9px] opacity-40 group-hover:opacity-100 transition-opacity">
-                  {showUnmappedFields ? 'HIDE' : 'VIEW MORE'}
-                </span>
-              </button>
+        {/* Supplementary Extracted Fields (Fields with Bounding Boxes not in Schema) */}
+        {Object.keys(flattenedUnmappedSummary).length > 0 && (
+          <div className="border-t border-border/20">
+            <button
+              onClick={() => setShowUnmappedFields(!showUnmappedFields)}
+              className="w-full px-4 py-3 flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:bg-[#F2F2F7]/40 transition-all bg-muted/5 group"
+            >
+              <div className="flex items-center gap-2">
+                <FileText className="w-3.5 h-3.5 opacity-50" />
+                <span>Supplementary Data ({Object.keys(flattenedUnmappedSummary).length})</span>
+                {showUnmappedFields && (
+                  <Badge variant="outline" className="h-4 text-[7px] bg-purple-500/5 text-purple-600 border-purple-500/20 rounded-full px-1.5 ml-1">
+                    ALL EVIDENCED
+                  </Badge>
+                )}
+              </div>
+              <span className="text-[9px] opacity-40 group-hover:opacity-100 transition-opacity">
+                {showUnmappedFields ? 'HIDE' : 'VIEW MORE'}
+              </span>
+            </button>
 
-              {showUnmappedFields && (
-                <div className="divide-y divide-border/20 bg-muted/5 animate-in fade-in slide-in-from-top-2 duration-300">
-                  {Object.entries(flattenedUnmappedSummary).map(([key, value]) => {
-                    const isHighlighted = highlightedField === key;
-                    const isSelected = selectedField === key;
-                    const isHoveredOnly = isHighlighted && !isSelected;
+            {showUnmappedFields && (
+              <div className="divide-y divide-border/20 bg-muted/5 animate-in fade-in slide-in-from-top-2 duration-300">
+                {Object.entries(flattenedUnmappedSummary).map(([key, value]) => {
+                  const isHighlighted = highlightedField === key;
+                  const isSelected = selectedField === key;
+                  const isHoveredOnly = isHighlighted && !isSelected;
 
-                    return (
-                      <div
-                        key={key}
-                        className={cn(
-                          'px-4 py-2 transition-all duration-300 cursor-pointer relative group',
-                          isSelected
-                            ? 'bg-purple-500/10 border-l-2 border-purple-500'
-                            : isHoveredOnly
-                              ? 'bg-purple-500/5 border-l-2 border-purple-500/60'
-                              : 'hover:bg-[#F2F2F7]/60 border-l-2 border-transparent'
-                        )}
-                        onClick={() => onFieldClick?.(key)}
-                        onMouseEnter={() => onFieldHover?.(key)}
-                        onMouseLeave={() => onFieldHover?.(null)}
-                      >
-                        <div className="flex flex-col space-y-0.5">
-                          <div className="flex items-center justify-between">
-                            <span className={cn(
-                              "text-[9px] font-bold uppercase tracking-tight text-muted-foreground/50",
-                              isHighlighted && "text-purple-600"
-                            )}>
-                              {key.replace(/^ext_/, '').replace(/_/g, ' ')}
-                            </span>
-                            <button
-                              className="h-4 px-1.5 text-[8px] font-bold hover:text-black text-muted-foreground/30 transition-all uppercase opacity-0 group-hover:opacity-100"
-                              onClick={(e) => { e.stopPropagation(); copyToClipboard(String(value)); }}
-                            >
-                              Copy
-                            </button>
-                          </div>
-                          <div className={cn(
-                            "text-[12px] font-medium break-words leading-tight tracking-tight",
-                            isHighlighted ? "text-black" : "text-foreground/80"
+                  return (
+                    <div
+                      key={key}
+                      className={cn(
+                        'px-4 py-2 transition-all duration-300 cursor-pointer relative group',
+                        isSelected
+                          ? 'bg-purple-500/10 border-l-2 border-purple-500'
+                          : isHoveredOnly
+                            ? 'bg-purple-500/5 border-l-2 border-purple-500/60'
+                            : 'hover:bg-[#F2F2F7]/60 border-l-2 border-transparent'
+                      )}
+                      onClick={() => onFieldClick?.(key)}
+                      onMouseEnter={() => onFieldHover?.(key)}
+                      onMouseLeave={() => onFieldHover?.(null)}
+                    >
+                      <div className="flex flex-col space-y-0.5">
+                        <div className="flex items-center justify-between">
+                          <span className={cn(
+                            "text-[9px] font-bold uppercase tracking-tight text-muted-foreground/50",
+                            isHighlighted && "text-purple-600"
                           )}>
-                            {String(value)}
-                          </div>
-                          <div className="opacity-50 mt-1">
-                            {renderCitation(key)}
-                          </div>
+                            {key.replace(/^ext_/, '').replace(/_/g, ' ')}
+                          </span>
+                          <button
+                            className="h-4 px-1.5 text-[8px] font-bold hover:text-black text-muted-foreground/30 transition-all uppercase opacity-0 group-hover:opacity-100"
+                            onClick={(e) => { e.stopPropagation(); copyToClipboard(String(value)); }}
+                          >
+                            Copy
+                          </button>
+                        </div>
+                        <div className={cn(
+                          "text-[12px] font-medium break-words leading-tight tracking-tight",
+                          isHighlighted ? "text-black" : "text-foreground/80"
+                        )}>
+                          {String(value)}
+                        </div>
+                        <div className="opacity-50 mt-1">
+                          {renderCitation(key)}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
-          <div className="h-10" />
-        </div>
+        <div className="h-10" />
       </div>
 
       {/* Modern Slim Meta Footer */}
