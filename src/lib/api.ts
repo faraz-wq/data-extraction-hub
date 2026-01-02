@@ -34,7 +34,7 @@ interface SessionDetail {
   bounding_boxes: Record<string, BoundingBox[]>;
   citations: Record<string, string | string[] | null>;
   documents: Document[];
-  source_documents?: Array<{ filename: string; document_title: string; page_numbers: number[] }>;
+  source_documents?: Array<{ filename: string; document_title: string; page_numbers: number[]; url?: string }>;
   field_remarks?: Record<string, string>;
   errors?: any[];
   validation_summary?: string;
@@ -286,7 +286,165 @@ class ApiClient {
       body: JSON.stringify({ field, type, text }),
     });
   }
+
+  async getSession(sessionId: string): Promise<SessionDetail> {
+    const response = await this.request<any>(`/v1/validation-sessions/${sessionId}`);
+
+    // The backend returns a wrapped object with validation_report
+    // We need to treat the validation_report as the "UniversalResponse" 
+    // but ensure metadata includes the top-level fields we might need.
+    const report = response.validation_report;
+
+    // Ensure metadata has what we need
+    if (!report.metadata) report.metadata = {};
+    report.metadata.validation_id = response.validation_id;
+    report.metadata.extraction_session_id = response.extraction_session_id;
+
+    // We also need to attach the documents/source_documents if they aren't in the report
+    // The backend response might need to be checked for where docs are stored.
+    // Looking at validation_sessions.py, it returns:
+    // "extraction_summary": session.extraction_summary_json
+    // The documents might be in extraction_summary. 
+
+    // Let's assume for now the validation_report contains most things, 
+    // but we might need to patch in documents if they are missing.
+    // For now, let's use the transformed logic.
+
+    return transformToSessionDetail(report, response.application_type);
+  }
 }
 
 export const api = new ApiClient();
+
+export function transformToSessionDetail(report: UniversalResponse, applicationType: string): SessionDetail {
+  // ADAPTER: Transform UniversalResponse -> SessionDetail (Ui Model)
+  const flatSummary: Record<string, any> = {};
+  const bboxes: Record<string, any[]> = {};
+  const citations: Record<string, string[]> = {};
+  const remarks: Record<string, string> = {};
+
+  // 1. Flatten Schema Projection -> Summary
+  report.schema_projection.ordered_fields.forEach(item => {
+    if (item.value !== null && item.value !== undefined) {
+      flatSummary[item.schema_field] = item.value;
+    }
+    if (item.reasoning) {
+      remarks[item.schema_field] = item.reasoning;
+    }
+  });
+
+  // 2. Build Bounding Boxes & Citations from Field Entities
+  const entityMap = new Map((report.field_entities || []).map(e => [e.field_id, e]));
+
+  report.schema_projection.ordered_fields.forEach(item => {
+    const derivedIds = item.derived_from || [];
+    const key = item.schema_field;
+
+    derivedIds.forEach(fid => {
+      const ent = entityMap.get(fid);
+      if (ent) {
+        // Bounding Boxes
+        if (ent.citation?.bounding_box && Array.isArray(ent.citation.bounding_box)) {
+          if (!bboxes[key]) bboxes[key] = [];
+
+          ent.citation.bounding_box.forEach((box: any) => {
+            bboxes[key].push({
+              filename: ent.document.filename,
+              page: ent.document.page,
+              coordinates: box,
+              document_title: ent.document.document_type
+            });
+          });
+        }
+
+        // Citations (Text)
+        if (ent.citation?.text_snippet) {
+          if (!citations[key]) citations[key] = [];
+          const snippet = `${ent.document.filename} (Page ${ent.document.page}) - ${ent.citation.text_snippet}`;
+          if (!citations[key].includes(snippet)) {
+            citations[key].push(snippet);
+          }
+        }
+      }
+    });
+  });
+
+  // 3. Capture Unmapped Entites with Bounding Boxes (Supplementary Data)
+  const unmappedSummary: Record<string, any> = {};
+  const unmappedFields = (report as any).schema_projection?.unmapped_fields || [];
+
+  unmappedFields.forEach((ent: any) => {
+    const resolvedEnt = entityMap.get(ent.field_id) || ent;
+
+    if (resolvedEnt.citation?.bounding_box && Array.isArray(resolvedEnt.citation.bounding_box) && resolvedEnt.citation.bounding_box.length > 0) {
+      const key = `ext_${resolvedEnt.field_name}`;
+      unmappedSummary[key] = resolvedEnt.field_value;
+
+      if (!bboxes[key]) bboxes[key] = [];
+      resolvedEnt.citation.bounding_box.forEach((box: any) => {
+        bboxes[key].push({
+          filename: resolvedEnt.document.filename,
+          page: resolvedEnt.document.page,
+          coordinates: box,
+          document_title: resolvedEnt.document.document_type
+        });
+      });
+
+      if (resolvedEnt.citation?.text_snippet) {
+        if (!citations[key]) citations[key] = [];
+        const snippet = `${resolvedEnt.document.filename} (Page ${resolvedEnt.document.page}) - ${resolvedEnt.citation.text_snippet}`;
+        if (!citations[key].includes(snippet)) {
+          citations[key].push(snippet);
+        }
+      }
+    }
+  });
+
+  // 3. Map Issues
+  const mappedIssues = (report.issues || []).map(i => ({
+    ...i,
+    field: i.schema_field // Map schema_field to field for UI
+  }));
+
+  // 4. Build flat page_text for backward compatibility
+  const flatPageText: Record<string, string> = {};
+
+  const extractionSessionId = report.metadata?.extraction_session_id;
+
+  const documentsWithUrls = (report.documents || []).map(doc => {
+    // Create flat page text map
+    doc.pages?.forEach((p: any) => {
+      flatPageText[`${doc.filename}_page_${p.page_number}`] = p.text;
+      if ((report.documents || []).length === 1) {
+        flatPageText[`page_${p.page_number}`] = p.text;
+      }
+    });
+
+    // Add URL if missing and we have a session ID
+    return {
+      ...doc,
+      url: (doc.url || (extractionSessionId
+        ? `${API_BASE_URL}/v1/me/sessions/${extractionSessionId}/documents/${doc.filename}`
+        : ''))
+    };
+  });
+
+  return {
+    session_id: report.metadata?.validation_id || report.metadata?.extraction_session_id || `temp-${Date.now()}`,
+    application_type: applicationType,
+    created_at: new Date().toISOString(),
+    file_count: documentsWithUrls.length,
+    summary: flatSummary,
+    unmapped_summary: unmappedSummary,
+    bounding_boxes: bboxes,
+    citations: citations,
+    documents: [], // kept for type compatibility if needed, but source_documents is preferred
+    source_documents: documentsWithUrls,
+    issues: mappedIssues,
+    validation_summary: `Confidence: ${Math.round((report.validation_summary?.confidence_score || 0) * 100)}%`,
+    page_text: flatPageText,
+    field_remarks: remarks,
+    errors: []
+  };
+}
 export type { SessionDetail, BoundingBox, ValidationReport, UniversalResponse, FieldEntity, ValidationIssue, ValidationRules };

@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { UploadForm } from '@/components/extract/UploadForm';
 import { ResultsView } from '@/components/extract/ResultsView';
 import { PDFViewerWithBoxes } from '@/components/extract/PDFViewerWithBoxes';
 import { PageTextDrawer } from '@/components/extract/PageTextDrawer';
-import { api, SessionDetail } from '@/lib/api';
+import { api, SessionDetail, transformToSessionDetail } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 
 export default function Extract() {
+  const navigate = useNavigate();
   const [supportedTypes, setSupportedTypes] = useState<string[]>([]);
   const [isLoadingTypes, setIsLoadingTypes] = useState(true);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -55,125 +57,21 @@ export default function Extract() {
       // Use the Universal Workflow via /validate-form
       const report = await api.validateForm(applicationType, files);
 
-      // ADAPTER: Transform UniversalResponse -> SessionDetail (Ui Model)
-      // This keeps the backend strict and the UI flexible.
-      const flatSummary: Record<string, any> = {};
-      const bboxes: Record<string, any[]> = {};
-      const citations: Record<string, string[]> = {};
-      const remarks: Record<string, string> = {};
-
-      // 1. Flatten Schema Projection -> Summary
-      report.schema_projection.ordered_fields.forEach(item => {
-        if (item.value !== null && item.value !== undefined) {
-          flatSummary[item.schema_field] = item.value;
-        }
-        if (item.reasoning) {
-          remarks[item.schema_field] = item.reasoning;
-        }
-      });
-
-      // 2. Build Bounding Boxes & Citations from Field Entities
-      const entityMap = new Map(report.field_entities.map(e => [e.field_id, e]));
-
-      report.schema_projection.ordered_fields.forEach(item => {
-        const derivedIds = item.derived_from || [];
-        const key = item.schema_field;
-
-        derivedIds.forEach(fid => {
-          const ent = entityMap.get(fid);
-          if (ent) {
-            // Bounding Boxes
-            if (ent.citation?.bounding_box && Array.isArray(ent.citation.bounding_box)) {
-              if (!bboxes[key]) bboxes[key] = [];
-
-              ent.citation.bounding_box.forEach((box: any) => {
-                bboxes[key].push({
-                  filename: ent.document.filename,
-                  page: ent.document.page,
-                  coordinates: box,
-                  document_title: ent.document.document_type
-                });
-              });
-            }
-
-            // Citations (Text)
-            if (ent.citation?.text_snippet) {
-              if (!citations[key]) citations[key] = [];
-              citations[key].push(`${ent.document.filename} (Page ${ent.document.page}) - ${ent.citation.text_snippet}`);
-            }
-          }
-        });
-      });
-
-      // 3. Capture Unmapped Entites with Bounding Boxes (Supplementary Data)
-      const unmappedSummary: Record<string, any> = {};
-      const unmappedFields = (report as any).schema_projection?.unmapped_fields || [];
-
-      unmappedFields.forEach((ent: any) => {
-        const resolvedEnt = entityMap.get(ent.field_id) || ent;
-
-        if (resolvedEnt.citation?.bounding_box && Array.isArray(resolvedEnt.citation.bounding_box) && resolvedEnt.citation.bounding_box.length > 0) {
-          const key = `ext_${resolvedEnt.field_name}`;
-          unmappedSummary[key] = resolvedEnt.field_value;
-
-          if (!bboxes[key]) bboxes[key] = [];
-          resolvedEnt.citation.bounding_box.forEach((box: any) => {
-            bboxes[key].push({
-              filename: resolvedEnt.document.filename,
-              page: resolvedEnt.document.page,
-              coordinates: box,
-              document_title: resolvedEnt.document.document_type
-            });
-          });
-
-          if (resolvedEnt.citation?.text_snippet) {
-            if (!citations[key]) citations[key] = [];
-            citations[key].push(`${resolvedEnt.document.filename} (Page ${resolvedEnt.document.page}) - ${resolvedEnt.citation.text_snippet}`);
-          }
-        }
-      });
-
-      // 3. Map Issues
-      const mappedIssues = report.issues.map(i => ({
-        ...i,
-        field: i.schema_field // Map schema_field to field for UI
-      }));
-
-      // 4. Build flat page_text for backward compatibility
-      const flatPageText: Record<string, string> = {};
-      report.documents.forEach(doc => {
-        doc.pages?.forEach((p: any) => {
-          flatPageText[`${doc.filename}_page_${p.page_number}`] = p.text;
-          if (report.documents.length === 1) {
-            flatPageText[`page_${p.page_number}`] = p.text;
-          }
-        });
-      });
-
-      const result: SessionDetail = {
-        session_id: report.metadata?.extraction_session_id || report.metadata?.validation_id || `temp-${Date.now()}`,
-        application_type: applicationType,
-        created_at: new Date().toISOString(),
-        file_count: files.length,
-        summary: flatSummary,
-        unmapped_summary: unmappedSummary,
-        bounding_boxes: bboxes,
-        citations: citations,
-        documents: [],
-        source_documents: report.documents || [],
-        issues: mappedIssues,
-        validation_summary: `Confidence: ${Math.round((report.validation_summary?.confidence_score || 0) * 100)}%`,
-        page_text: flatPageText,
-        field_remarks: remarks,
-        errors: []
-      };
+      // Use the helper to transform the response
+      const result = transformToSessionDetail(report, applicationType);
 
       setExtractionResult(result);
 
       toast({
         title: 'Validation Complete',
-        description: `Successfully processed ${Object.keys(result.summary || {}).length} fields`,
+        description: `Successfully processed ${Object.keys(result.summary || {}).length} fields. Saving session...`,
       });
+
+      // Navigate to the persistent session view
+      setTimeout(() => {
+        navigate(`/sessions/${result.session_id}`);
+      }, 1000);
+
     } catch (error) {
       toast({
         title: 'Validation Failed',
