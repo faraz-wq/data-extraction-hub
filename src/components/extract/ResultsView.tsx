@@ -607,9 +607,6 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
           <span className="opacity-30">/</span>
           <span>{result.source_documents?.length || 0} Evidence</span>
         </div>
-        <Link to={`/sessions/${result.session_id}`} className="hover:text-black transition-colors">
-          View Detail ›
-        </Link>
       </div>
 
       {/* Summary Modal - Clean iOS Style */}

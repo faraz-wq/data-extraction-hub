@@ -27,8 +27,8 @@ export default function Index() {
           </h1>
 
           <p className="text-lg text-muted-foreground mb-8">
-            Transform invoices, contracts, receipts, and more into clean, structured JSON. 
-            Build custom schemas and let AI do the heavy lifting.
+            Transform invoices, contracts, receipts, and more into clean, structured JSON.
+            Use our universal extraction engine to process any supported document type.
           </p>
 
           <div className="flex items-center justify-center gap-4">
@@ -49,8 +49,8 @@ export default function Index() {
               description: 'Process PDFs, images, scanned documents, and more with high accuracy.',
             },
             {
-              title: 'Custom Schemas',
-              description: 'Define exactly what data you need. Create reusable extraction templates.',
+              title: 'Universal Extraction',
+              description: 'Standardized validators for common document types to ensure data integrity.',
             },
             {
               title: 'Enterprise Ready',

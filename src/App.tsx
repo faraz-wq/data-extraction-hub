@@ -1,4 +1,4 @@
- import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -7,18 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
-import Sessions from "./pages/Sessions";
-import Schemas from "./pages/Schemas";
-import NewSchema from "./pages/NewSchema";
-import EditSchema from "./pages/EditSchema";
-import ApiKeys from "./pages/ApiKeys";
-import Settings from "./pages/Settings";
 import Extract from "./pages/Extract";
-import Validate from "./pages/Validate";
-import ValidationSessions from "./pages/ValidationSessions";
-import ValidationSessionDetail from "./pages/ValidationSessionDetail";
-import SessionDetail from "./pages/SessionDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,62 +38,6 @@ function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/sessions"
-        element={
-          <ProtectedRoute>
-            <Sessions />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/schemas"
-        element={
-          <ProtectedRoute>
-            <Schemas />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/schemas/new"
-        element={
-          <ProtectedRoute>
-            <NewSchema />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/schemas/:schemaId/edit"
-        element={
-          <ProtectedRoute>
-            <EditSchema />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/api-keys"
-        element={
-          <ProtectedRoute>
-            <ApiKeys />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute>
-            <Settings />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/extract"
         element={
           <ProtectedRoute>
@@ -112,39 +45,6 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/validate"
-        element={
-          <ProtectedRoute>
-            <Validate />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/validate/sessions"
-        element={
-          <ProtectedRoute>
-            <ValidationSessions />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/validate/sessions/:id"
-        element={
-          <ProtectedRoute>
-            <ValidationSessionDetail />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/sessions/:sessionId"
-        element={
-          <ProtectedRoute>
-            <SessionDetail />
-          </ProtectedRoute>
-        }
-      />
-
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

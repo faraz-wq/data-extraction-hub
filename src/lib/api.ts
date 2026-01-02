@@ -23,22 +23,12 @@ interface RegisterResponse {
   api_key?: string;
 }
 
-interface Stats {
-  total_requests: number;
-  total_errors: number;
-  total_documents: number;
-  avg_response_time_ms: number;
-  requests_last_24h: number;
-}
-
-interface Session {
+interface SessionDetail {
   session_id: string;
   application_type: string;
   created_at: string;
   file_count: number;
-}
-
-interface SessionDetail extends Session {
+  // UI helper fields
   issues: any[];
   summary: Record<string, unknown>;
   bounding_boxes: Record<string, BoundingBox[]>;
@@ -59,71 +49,11 @@ interface BoundingBox {
   document_title?: string;
 }
 
-
 interface Document {
   id: string;
   filename: string;
   url: string;
   page_numbers?: number[];
-}
-
-interface Schema {
-  schema_id: string;
-  schema_name: string;
-  description: string;
-  fields: SchemaField[];
-  created_by?: string | number;
-  created_at?: string;
-  updated_at?: string;
-}
-
-interface SchemaField {
-  name: string;
-  type: string;
-  description: string;
-  required?: boolean;
-}
-
-interface ApiKey {
-  id: string;
-  description: string;
-  created_at: string;
-  last_used_at: string | null;
-  revoked: boolean;
-  total_requests: number;
-  total_errors?: number;
-  total_documents?: number;
-}
-
-interface LogEntry {
-  id?: number;
-  api_key_id?: number;
-  session_id?: string;
-  method: string;
-  path: string;
-  status_code: number;
-  processing_ms: number;
-  timestamp: string;
-  client_ip: string;
-  user_agent?: string;
-  error_message: string | null;
-}
-
-interface MetricPoint {
-  bucket: string;
-  requests: number;
-  errors: number;
-  avg_ms: number;
-}
-
-interface PaginatedResponse<T> {
-  items: T[];
-  total_count?: number;
-}
-
-interface SchemaListResponse {
-  items?: Schema[];
-  schemas?: Schema[];
 }
 
 interface ValidationIssue {
@@ -179,7 +109,7 @@ interface UniversalResponse {
   metadata: Record<string, any>;
 }
 
-// Legacy Alias (deprecated but used in other parts)
+// Legacy Alias
 type ValidationReport = UniversalResponse;
 
 interface ValidationRules {
@@ -315,250 +245,13 @@ class ApiClient {
     this.clearAuth();
   }
 
-  // Stats & Metrics
-  async getStats(): Promise<Stats> {
-    return this.request<Stats>('/v1/me/stats');
-  }
 
-  async getMetrics(start: string, end: string, groupBy: 'hour' | 'day'): Promise<MetricPoint[]> {
-    return this.request<MetricPoint[]>(
-      `/v1/me/metrics/requests?start=${start}&end=${end}&group_by=${groupBy}`
-    );
-  }
-
-  // Sessions
-  async getSessions(limit = 20, offset = 0): Promise<Session[]> {
-    const response = await this.request<PaginatedResponse<Session>>(`/v1/me/sessions/?limit=${limit}&offset=${offset}`);
-    return response.items;
-  }
-
-  async getSession(sessionId: string): Promise<SessionDetail> {
-    const data = await this.request<SessionDetail>(`/v1/me/sessions/${sessionId}`);
-
-    // Add URLs to documents
-    if (data.documents) {
-      data.documents = data.documents.map(doc => ({
-        ...doc,
-        url: `${API_BASE_URL}/v1/me/sessions/${sessionId}/documents/${doc.filename}`
-      }));
-    }
-
-    return data;
-  }
-
-  // Schemas
-  async getSchemas(): Promise<Schema[]> {
-    const response = await this.request<SchemaListResponse>('/v1/me/schemas');
-    return response.items || response.schemas || [];
-  }
-
-  async createSchema(schema: Omit<Schema, 'schema_id' | 'created_by' | 'created_at' | 'updated_at'> & { schema_id: string }): Promise<Schema> {
-    return this.request<Schema>('/v1/me/schemas', {
-      method: 'POST',
-      body: JSON.stringify(schema),
-    });
-  }
-
-  async updateSchema(schemaId: string, schema: Partial<Schema>): Promise<Schema> {
-    return this.request<Schema>(`/v1/me/schemas/${schemaId}`, {
-      method: 'PUT',
-      body: JSON.stringify(schema),
-    });
-  }
-
-  async deleteSchema(schemaId: string): Promise<void> {
-    await this.request(`/v1/me/schemas/${schemaId}`, { method: 'DELETE' });
-  }
-
-  // API Keys
-  async getApiKeys(): Promise<ApiKey[]> {
-    const response = await this.request<PaginatedResponse<ApiKey>>('/v1/me/api-keys/');
-    return response.items;
-  }
-
-  async createApiKey(description: string): Promise<{ api_key: string }> {
-    return this.request<{ api_key: string }>('/v1/me/api-keys/', {
-      method: 'POST',
-      body: JSON.stringify({ description }),
-    });
-  }
-
-  async revokeApiKey(keyId: string): Promise<void> {
-    await this.request(`/v1/me/api-keys/${keyId}`, { method: 'DELETE' });
-  }
-
-  // Logs
-  async getLogs(params: {
-    limit?: number;
-    offset?: number;
-    errors_only?: boolean;
-    min_processing_ms?: number;
-    path_contains?: string;
-  }): Promise<LogEntry[]> {
-    const query = new URLSearchParams();
-    if (params.limit) query.set('limit', params.limit.toString());
-    if (params.offset) query.set('offset', params.offset.toString());
-    if (params.errors_only) query.set('errors_only', 'true');
-    if (params.min_processing_ms) query.set('min_processing_ms', params.min_processing_ms.toString());
-    if (params.path_contains) query.set('path_contains', params.path_contains);
-
-    const response = await this.request<PaginatedResponse<LogEntry>>(`/v1/me/logs?${query.toString()}`);
-    return response.items;
-  }
-
-  // Extract
-  async extract(schemaId: string, files: File[]): Promise<SessionDetail> {
-    const formData = new FormData();
-    formData.append('schema_id', schemaId);
-    files.forEach((file) => formData.append('files', file));
-
-    const headers: Record<string, string> = {};
-    if (this.accessToken) {
-      headers['Authorization'] = `Bearer ${this.accessToken}`;
-    }
-
-    const response = await fetch(`${API_BASE_URL}/v1/extract-custom`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.detail || `Extraction failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    // Transform flat response to SessionDetail format
-    const {
-      session_id,
-      bounding_boxes,
-      citations,
-      annotated_files,
-      _token_usage,
-      source_documents,
-      _errors,
-      field_remarks,
-      validation_summary,
-      ...summaryFields
-    } = data;
-
-    return {
-      session_id: session_id || 'temp-' + Date.now(),
-      application_type: `custom:${schemaId}`,
-      created_at: new Date().toISOString(),
-      file_count: files.length,
-      summary: summaryFields,
-      bounding_boxes: bounding_boxes || {},
-      citations: citations || {},
-      documents: [],
-      source_documents: source_documents || [],
-      errors: _errors || [],
-      field_remarks: data.field_remarks || {},
-      validation_summary: data.validation_summary,
-      issues: [],
-    };
-  }
-
-  async extractSummary(applicationType: string, files: File[]): Promise<SessionDetail> {
-    const formData = new FormData();
-    formData.append('application_type', applicationType);
-    files.forEach((file) => formData.append('files', file));
-
-    const headers: Record<string, string> = {};
-    if (this.accessToken) {
-      headers['Authorization'] = `Bearer ${this.accessToken}`;
-    }
-
-    const response = await fetch(`${API_BASE_URL}/extract-summary`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.detail || `Extraction failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    // Transform flat response to SessionDetail format
-    const {
-      session_id,
-      bounding_boxes,
-      citations,
-      annotated_files,
-      _token_usage,
-      source_documents,
-      _errors,
-      field_remarks,
-      validation_summary,
-      ...summaryFields
-    } = data;
-
-    return {
-      session_id: session_id || 'temp-' + Date.now(),
-      application_type: applicationType,
-      created_at: new Date().toISOString(),
-      file_count: files.length,
-      summary: summaryFields,
-      bounding_boxes: bounding_boxes || {},
-      citations: citations || {},
-      documents: [],
-      source_documents: source_documents || [],
-      errors: _errors || [],
-      field_remarks: data.field_remarks || {},
-      validation_summary: data.validation_summary,
-      issues: [],
-    };
-  }
-
-  async submitFeedback(sessionId: string, fieldName: string, type: 'upvote' | 'downvote', text?: string): Promise<void> {
-    await this.request('/feedback', {
-      method: 'POST',
-      body: JSON.stringify({
-        session_id: sessionId,
-        field_name: fieldName,
-        feedback_type: type,
-        feedback_text: text
-      }),
-    });
-  }
 
   // Validation endpoints
   async validateForm(applicationType: string, files: File[]): Promise<UniversalResponse> {
     const formData = new FormData();
     formData.append('application_type', applicationType);
     files.forEach((file) => formData.append('files', file));
-
-    const headers: Record<string, string> = {};
-    if (this.accessToken) {
-      headers['Authorization'] = `Bearer ${this.accessToken}`;
-    }
-
-    const response = await fetch(`${API_BASE_URL}/validate-form`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.detail || `Validation failed: ${response.status}`);
-    }
-
-    return response.json();
-  }
-
-  async validateExtraction(applicationType: string, extractionSummary: Record<string, unknown>, extractionSessionId?: string): Promise<ValidationReport> {
-    const formData = new FormData();
-    formData.append('application_type', applicationType);
-    formData.append('extraction_summary', JSON.stringify(extractionSummary));
-    if (extractionSessionId) {
-      formData.append('extraction_session_id', extractionSessionId);
-    }
 
     const headers: Record<string, string> = {};
     if (this.accessToken) {
@@ -587,72 +280,13 @@ class ApiClient {
     return this.request<{ supported_types: string[]; count: number }>('/validate-form/supported-types');
   }
 
-  // Validation Session Management
-  async getValidationSessions(params?: {
-    limit?: number;
-    offset?: number;
-    application_type?: string;
-    auto_approved?: boolean;
-  }): Promise<{
-    items: Array<{
-      validation_id: string;
-      application_type: string;
-      auto_approved: boolean;
-      confidence_score: number;
-      error_count: number;
-      warning_count: number;
-      info_count: number;
-      created_at: string;
-      extraction_session_id?: string;
-    }>;
-    total_count: number;
-    limit: number;
-    offset: number;
-  }> {
-    const queryParams = new URLSearchParams();
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.offset) queryParams.append('offset', params.offset.toString());
-    if (params?.application_type) queryParams.append('application_type', params.application_type);
-    if (params?.auto_approved !== undefined) queryParams.append('auto_approved', params.auto_approved.toString());
-
-    const url = `/v1/validation-sessions${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
-    return this.request(url);
-  }
-
-  async getValidationSession(validationId: string): Promise<{
-    validation_id: string;
-    application_type: string;
-    auto_approved: boolean;
-    confidence_score: number;
-    error_count: number;
-    warning_count: number;
-    info_count: number;
-    created_at: string;
-    extraction_session_id?: string;
-    validation_report: ValidationReport;
-    extraction_summary: Record<string, unknown>;
-    user_id?: number;
-    api_key_id?: number;
-  }> {
-    return this.request(`/v1/validation-sessions/${validationId}`);
-  }
-
-  async deleteValidationSession(validationId: string): Promise<{ message: string }> {
-    return this.request(`/v1/validation-sessions/${validationId}`, {
-      method: 'DELETE',
+  async submitFeedback(sessionId: string, field: string, type: 'upvote' | 'downvote', text?: string): Promise<void> {
+    return this.request<void>(`/v1/validation-sessions/${sessionId}/feedback`, {
+      method: 'POST',
+      body: JSON.stringify({ field, type, text }),
     });
-  }
-
-  async getValidationStats(): Promise<{
-    total_sessions: number;
-    auto_approved_count: number;
-    auto_approved_percentage: number;
-    average_confidence_score: number;
-    type_breakdown: Array<{ application_type: string; count: number }>;
-  }> {
-    return this.request('/v1/validation-sessions/stats/summary');
   }
 }
 
 export const api = new ApiClient();
-export type { Stats, Session, SessionDetail, Schema, SchemaField, ApiKey, LogEntry, MetricPoint, User, BoundingBox, ValidationReport, UniversalResponse, FieldEntity, ValidationIssue, ValidationRules };
+export type { SessionDetail, BoundingBox, ValidationReport, UniversalResponse, FieldEntity, ValidationIssue, ValidationRules };

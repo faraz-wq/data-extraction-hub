@@ -2,9 +2,9 @@ import { useState, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { Schema } from '@/lib/api';
 
-const APPLICATION_TYPES = [
+// Fallback types if API fails or is loading
+const FALLBACK_TYPES = [
   "Income Certificate",
   "OBC Certificate",
   "EWS Certificate",
@@ -13,17 +13,19 @@ const APPLICATION_TYPES = [
 ];
 
 interface UploadFormProps {
-  schemas: Schema[];
-  isLoadingSchemas: boolean;
-  onExtract: (id: string, type: 'schema' | 'application', files: File[]) => Promise<void>;
+  supportedTypes: string[];
+  isLoadingTypes: boolean;
+  onExtract: (applicationType: string, files: File[]) => Promise<void>;
   isExtracting: boolean;
 }
 
-export function UploadForm({ schemas, isLoadingSchemas, onExtract, isExtracting }: UploadFormProps) {
+export function UploadForm({ supportedTypes, isLoadingTypes, onExtract, isExtracting }: UploadFormProps) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [selectedValue, setSelectedValue] = useState<string>('');
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const displayTypes = supportedTypes.length > 0 ? supportedTypes : FALLBACK_TYPES;
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -58,12 +60,7 @@ export function UploadForm({ schemas, isLoadingSchemas, onExtract, isExtracting 
 
   const handleSubmit = async () => {
     if (!selectedValue || selectedFiles.length === 0) return;
-
-    const isSchema = selectedValue.startsWith('schema:');
-    const id = isSchema ? selectedValue.replace('schema:', '') : selectedValue;
-    const type = isSchema ? 'schema' : 'application';
-
-    await onExtract(id, type, selectedFiles);
+    await onExtract(selectedValue, selectedFiles);
   };
 
   return (
@@ -85,24 +82,16 @@ export function UploadForm({ schemas, isLoadingSchemas, onExtract, isExtracting 
         className="hidden"
       />
 
-      <Select value={selectedValue} onValueChange={setSelectedValue} disabled={isLoadingSchemas}>
+      <Select value={selectedValue} onValueChange={setSelectedValue} disabled={isLoadingTypes && supportedTypes.length === 0}>
         <SelectTrigger className="w-48 h-8 text-xs">
-          <SelectValue placeholder="Select type..." />
+          <SelectValue placeholder={isLoadingTypes ? "Loading..." : "Select type..."} />
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
-            <SelectLabel>Applications</SelectLabel>
-            {APPLICATION_TYPES.map(type => (
+            <SelectLabel>Document Type</SelectLabel>
+            {displayTypes.map(type => (
               <SelectItem key={type} value={type} className="text-xs">
                 {type}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-          <SelectGroup>
-            <SelectLabel>Schemas</SelectLabel>
-            {schemas.map(schema => (
-              <SelectItem key={schema.schema_id} value={`schema:${schema.schema_id}`} className="text-xs">
-                {schema.schema_name}
               </SelectItem>
             ))}
           </SelectGroup>
