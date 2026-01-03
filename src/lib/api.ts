@@ -67,6 +67,25 @@ interface ValidationIssue {
   requires_review: boolean;
 }
 
+interface SessionListItem {
+  session_id: string;
+  application_type: string;
+  created_at: string;
+  file_count: number;
+  session_type: 'extraction' | 'validation';
+  confidence_score?: number;
+  error_count?: number;
+  warning_count?: number;
+}
+
+interface SessionListResponse {
+  items: SessionListItem[];
+  total_count: number;
+  limit: number;
+  offset: number;
+}
+
+
 // Universal Extraction Types (Strict)
 interface FieldEntity {
   field_id: string;
@@ -287,6 +306,11 @@ class ApiClient {
     });
   }
 
+  async listSessions(limit: number = 50, offset: number = 0): Promise<SessionListResponse> {
+    return this.request<SessionListResponse>(`/v1/me/sessions?limit=${limit}&offset=${offset}`);
+  }
+
+
   async getSession(sessionId: string): Promise<SessionDetail> {
     const response = await this.request<any>(`/v1/validation-sessions/${sessionId}`);
 
@@ -477,4 +501,5 @@ export function transformToSessionDetail(report: UniversalResponse, applicationT
     errors: []
   };
 }
-export type { SessionDetail, BoundingBox, ValidationReport, UniversalResponse, FieldEntity, ValidationIssue, ValidationRules };
+export type { SessionDetail, BoundingBox, ValidationReport, UniversalResponse, FieldEntity, ValidationIssue, ValidationRules, SessionListItem, SessionListResponse };
+

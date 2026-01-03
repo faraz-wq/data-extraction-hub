@@ -8,8 +8,10 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Extract from "./pages/Extract";
+import Extractions from "./pages/Extractions";
 import Session from "./pages/Session";
 import NotFound from "./pages/NotFound";
+
 
 const queryClient = new QueryClient();
 
@@ -46,6 +48,15 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/extractions"
+        element={
+          <ProtectedRoute>
+            <Extractions />
+          </ProtectedRoute>
+        }
+      />
+
       <Route
         path="/sessions/:sessionId"
         element={

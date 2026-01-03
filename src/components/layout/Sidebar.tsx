@@ -1,6 +1,7 @@
 import {
   LogOut,
-  Upload
+  Upload,
+  FileText
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,9 @@ export function Sidebar() {
 
   const navItems = [
     { to: '/extract', icon: Upload, label: 'New Validation' },
+    { to: '/extractions', icon: FileText, label: 'Extractions' },
   ];
+
 
   return (
     <aside className="fixed inset-y-0 left-0 z-50 w-16 bg-sidebar border-r border-sidebar-border flex flex-col items-center py-4">
