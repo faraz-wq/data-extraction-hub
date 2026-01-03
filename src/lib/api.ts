@@ -336,6 +336,35 @@ class ApiClient {
 
     return transformToSessionDetail(report, response.application_type);
   }
+
+  // Validation Configuration Management
+  async getValidationConfigs(): Promise<{ configs: any[] }> {
+    return this.request<{ configs: any[] }>('/v1/validation-configs');
+  }
+
+  async getValidationConfig(applicationType: string): Promise<any> {
+    return this.request<any>(`/v1/validation-configs/${encodeURIComponent(applicationType)}`);
+  }
+
+  async createValidationConfig(config: any): Promise<any> {
+    return this.request<any>('/v1/validation-configs', {
+      method: 'POST',
+      body: JSON.stringify(config),
+    });
+  }
+
+  async updateValidationConfig(applicationType: string, config: any): Promise<any> {
+    return this.request<any>(`/v1/validation-configs/${encodeURIComponent(applicationType)}`, {
+      method: 'PUT',
+      body: JSON.stringify(config),
+    });
+  }
+
+  async deleteValidationConfig(applicationType: string): Promise<void> {
+    return this.request<void>(`/v1/validation-configs/${encodeURIComponent(applicationType)}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 export const api = new ApiClient();

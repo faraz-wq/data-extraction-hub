@@ -1,7 +1,8 @@
 import {
   LogOut,
   Upload,
-  FileText
+  FileText,
+  Settings
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ export function Sidebar() {
   const navItems = [
     { to: '/extract', icon: Upload, label: 'New Validation' },
     { to: '/extractions', icon: FileText, label: 'Extractions' },
+    { to: '/configs', icon: Settings, label: 'Configurations' },
   ];
 
 

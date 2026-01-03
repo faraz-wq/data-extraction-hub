@@ -10,6 +10,7 @@ import Register from "./pages/Register";
 import Extract from "./pages/Extract";
 import Extractions from "./pages/Extractions";
 import Session from "./pages/Session";
+import ConfigManager from "./pages/ConfigManager";
 import NotFound from "./pages/NotFound";
 
 
@@ -62,6 +63,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Session />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/configs"
+        element={
+          <ProtectedRoute>
+            <ConfigManager />
           </ProtectedRoute>
         }
       />
