@@ -336,6 +336,26 @@ export function transformToSessionDetail(report: UniversalResponse, applicationT
   // 2. Build Bounding Boxes & Citations from Field Entities
   const entityMap = new Map((report.field_entities || []).map(e => [e.field_id, e]));
 
+  // Helper function to extract array index and field name from field entity names
+  // e.g., "family_member_1_name_form" -> { arrayField: "family_members", index: 0, subField: "name" }
+  const parseArrayFieldEntity = (fieldName: string, schemaField: string): { arrayField: string; index: number; subField: string } | null => {
+    // Pattern: {singular}_N_{subfield}_{source}
+    // e.g., family_member_1_name_form, family_member_2_age_proof
+    const match = fieldName.match(/^(.+?)_(\d+)_([^_]+)(?:_.*)?$/);
+    if (match) {
+      const [, singular, indexStr, subField] = match;
+      const index = parseInt(indexStr) - 1; // Convert 1-based to 0-based
+
+      // Check if schemaField matches the plural form
+      // Simple heuristic: add 's' to singular
+      const expectedPlural = singular + 's';
+      if (schemaField === expectedPlural || schemaField.startsWith(expectedPlural)) {
+        return { arrayField: schemaField, index, subField };
+      }
+    }
+    return null;
+  };
+
   report.schema_projection.ordered_fields.forEach(item => {
     const derivedIds = item.derived_from || [];
     const key = item.schema_field;
@@ -343,12 +363,22 @@ export function transformToSessionDetail(report: UniversalResponse, applicationT
     derivedIds.forEach(fid => {
       const ent = entityMap.get(fid);
       if (ent) {
+        // Try to parse if this is an array field entity
+        const arrayInfo = parseArrayFieldEntity(ent.field_name, key);
+
+        // Determine the target key for bounding boxes
+        let targetKey = key;
+        if (arrayInfo) {
+          // This is an array element field, use flattened key
+          targetKey = `${arrayInfo.arrayField}[${arrayInfo.index}].${arrayInfo.subField}`;
+        }
+
         // Bounding Boxes
         if (ent.citation?.bounding_box && Array.isArray(ent.citation.bounding_box)) {
-          if (!bboxes[key]) bboxes[key] = [];
+          if (!bboxes[targetKey]) bboxes[targetKey] = [];
 
           ent.citation.bounding_box.forEach((box: any) => {
-            bboxes[key].push({
+            bboxes[targetKey].push({
               filename: ent.document.filename,
               page: ent.document.page,
               coordinates: box,
@@ -359,10 +389,10 @@ export function transformToSessionDetail(report: UniversalResponse, applicationT
 
         // Citations (Text)
         if (ent.citation?.text_snippet) {
-          if (!citations[key]) citations[key] = [];
+          if (!citations[targetKey]) citations[targetKey] = [];
           const snippet = `${ent.document.filename} (Page ${ent.document.page}) - ${ent.citation.text_snippet}`;
-          if (!citations[key].includes(snippet)) {
-            citations[key].push(snippet);
+          if (!citations[targetKey].includes(snippet)) {
+            citations[targetKey].push(snippet);
           }
         }
       }
