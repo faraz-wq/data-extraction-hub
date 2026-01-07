@@ -19,6 +19,7 @@ export default function Session() {
     const [hoveredField, setHoveredField] = useState<string | null>(null);
     const [selectedField, setSelectedField] = useState<string | null>(null);
     const [pageNumber, setPageNumber] = useState(1);
+    const [activeFilename, setActiveFilename] = useState<string | null>(null);
     const [isTextDrawerOpen, setIsTextDrawerOpen] = useState(false);
 
     // Derived state
@@ -36,8 +37,10 @@ export default function Session() {
                 const data = await api.getSession(sessionId);
                 setSession(data);
 
-                // If we have documents, try to set the first one as active implicitly by just rendering it
-                // The PDFViewer handles the file prop.
+                // Initialize active document
+                if (data.source_documents?.[0]) {
+                    setActiveFilename(data.source_documents[0].filename);
+                }
             } catch (error) {
                 console.error('Failed to load session:', error);
                 toast({
@@ -58,8 +61,33 @@ export default function Session() {
         setHoveredField(field);
     };
 
-    const handleFieldClick = (field: string) => {
-        setSelectedField(prev => prev === field ? null : field);
+    const handleFieldClick = (field: string, switchDoc: boolean = true) => {
+        setSelectedField(prev => {
+            const next = prev === field ? null : field;
+
+            // If we are selecting a field, ensure we show the application document
+            // but only if switchDoc is true (it is false when clicking a box in the viewer)
+            if (next && session && switchDoc) {
+                const appDoc = session.source_documents?.find(d =>
+                    (d.document_title || d.filename || '').toLowerCase().includes('application')
+                );
+                if (appDoc) {
+                    setActiveFilename(appDoc.filename);
+                    if (appDoc.page_numbers?.[0]) {
+                        setPageNumber(appDoc.page_numbers[0]);
+                    }
+                }
+            }
+
+            return next;
+        });
+    };
+
+    const handlePageClick = (page: number, filename?: string) => {
+        setPageNumber(page);
+        if (filename) {
+            setActiveFilename(filename);
+        }
     };
 
     if (loading) {
@@ -77,13 +105,10 @@ export default function Session() {
 
     if (!session) return null;
 
-    // Determine the file to show
-    // In the real app, we might support multiple files, but for now take the first one
-    const fileToView = session.source_documents?.[0]?.url
-        ? session.source_documents[0].url
-        : null;
-
-    const currentFilename = session.source_documents?.[0]?.filename || 'document';
+    // Determine the active document
+    const activeDoc = session.source_documents?.find(d => d.filename === activeFilename) || session.source_documents?.[0];
+    const fileToView = activeDoc?.url || null;
+    const currentFilename = activeDoc?.filename || 'document';
 
     return (
         <DashboardLayout noPadding>
@@ -98,7 +123,7 @@ export default function Session() {
                                 onFieldClick={handleFieldClick}
                                 highlightedField={activeField}
                                 selectedField={selectedField}
-                                onPageClick={setPageNumber}
+                                onPageClick={handlePageClick}
                                 currentPage={pageNumber}
                             />
                         </div>
@@ -106,6 +131,7 @@ export default function Session() {
                             <div className="flex-1 rounded-2xl overflow-hidden shadow-2xl ring-1 ring-black/5 bg-white">
                                 <PDFViewerWithBoxes
                                     file={fileToView}
+                                    currentFilename={currentFilename}
                                     boundingBoxes={session.bounding_boxes}
                                     highlightedField={activeField}
                                     onFieldClick={handleFieldClick}

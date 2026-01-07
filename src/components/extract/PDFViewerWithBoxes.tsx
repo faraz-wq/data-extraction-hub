@@ -11,9 +11,10 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 
 interface PDFViewerWithBoxesProps {
   file: File | string | null;
+  currentFilename?: string | null;
   boundingBoxes?: Record<string, BoundingBox[]>;
   highlightedField?: string | null;
-  onFieldClick?: (field: string) => void;
+  onFieldClick?: (field: string, switchDoc?: boolean) => void;
   page?: number;
   onPageChange?: (page: number) => void;
   onShowText?: () => void;
@@ -21,6 +22,7 @@ interface PDFViewerWithBoxesProps {
 
 export function PDFViewerWithBoxes({
   file,
+  currentFilename,
   boundingBoxes = {},
   highlightedField,
   onFieldClick,
@@ -78,38 +80,41 @@ export function PDFViewerWithBoxes({
     return Object.entries(boundingBoxes).flatMap(([field, fieldBoxes]) => {
       const boxList = Array.isArray(fieldBoxes) ? fieldBoxes : [fieldBoxes];
 
-      return boxList.map((box, index) => {
-        const [y_min, x_min, y_max, x_max] = box.coordinates;
-        // Check if the coordinates are on 0-1 scale or 0-1000 scale
-        const is1000Scale = [y_min, x_min, y_max, x_max].some(c => c > 2);
+      return boxList
+        .filter(box => !currentFilename || box.filename === currentFilename)
+        .map((box, index) => {
+          const [y_min, x_min, y_max, x_max] = box.coordinates;
+          // Check if the coordinates are on 0-1 scale or 0-1000 scale
+          const is1000Scale = [y_min, x_min, y_max, x_max].some(c => c > 2);
 
-        // Calculate percentage values (0-100%)
-        let left, top, width, height;
+          // Calculate percentage values (0-100%)
+          let left, top, width, height;
 
-        if (is1000Scale) {
-          left = x_min / 10;
-          top = y_min / 10;
-          width = (x_max - x_min) / 10;
-          height = (y_max - y_min) / 10;
-        } else {
-          left = x_min * 100;
-          top = y_min * 100;
-          width = (x_max - x_min) * 100;
-          height = (y_max - y_min) * 100;
-        }
+          if (is1000Scale) {
+            left = x_min / 10;
+            top = y_min / 10;
+            width = (x_max - x_min) / 10;
+            height = (y_max - y_min) / 10;
+          } else {
+            left = x_min * 100;
+            top = y_min * 100;
+            width = (x_max - x_min) * 100;
+            height = (y_max - y_min) * 100;
+          }
 
-        return {
-          field,
-          index,
-          page: box.page,
-          left,
-          top,
-          width,
-          height,
-        };
-      });
+          return {
+            field,
+            index,
+            page: box.page,
+            left,
+            top,
+            width,
+            height,
+            filename: box.filename
+          };
+        });
     });
-  }, [boundingBoxes]);
+  }, [boundingBoxes, currentFilename]);
 
   const allHighlightBoxes = useMemo(() =>
     boxes.filter(box => box.field === highlightedField),
@@ -239,7 +244,7 @@ export function PDFViewerWithBoxes({
                   width: `calc(${box.width}% + 4px)`,
                   height: `calc(${box.height}% + 4px)`,
                 }}
-                onClick={() => onFieldClick?.(box.field)}
+                onClick={() => onFieldClick?.(box.field, false)}
               >
                 {isHighlighted && (
                   <div className="absolute -top-6 left-0 flex items-center gap-1.5 px-2 py-1 bg-[#5856D6] text-white text-[9px] font-bold rounded-md shadow-lg whitespace-nowrap z-30 animate-in fade-in zoom-in duration-200">

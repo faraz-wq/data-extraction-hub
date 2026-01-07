@@ -25,7 +25,7 @@ interface ResultsViewProps {
   onFieldClick?: (field: string) => void;
   highlightedField?: string | null;
   selectedField?: string | null;
-  onPageClick?: (page: number) => void;
+  onPageClick?: (page: number, filename?: string) => void;
   currentPage?: number;
 }
 
@@ -143,6 +143,7 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
         return {
           text: `${title} (Page ${b.page})`,
           page: b.page,
+          filename: b.filename,
           isApplication: (title || '').toLowerCase().includes('application')
         };
       });
@@ -173,12 +174,12 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
                     )}
                     onClick={(e) => {
                       e.stopPropagation();
-                      onPageClick?.(loc.page);
+                      onPageClick?.(loc.page, loc.filename);
                       onFieldClick?.(fieldName);
                     }}
                     onMouseEnter={(e) => {
                       e.stopPropagation();
-                      onPageClick?.(loc.page);
+                      onPageClick?.(loc.page, loc.filename);
                       onFieldHover?.(fieldName);
                     }}
                     onMouseLeave={(e) => {

@@ -377,53 +377,119 @@ export function transformToSessionDetail(report: UniversalResponse, applicationT
   const remarks: Record<string, string> = {};
 
   // 1. Flatten Schema Projection -> Summary
-  report.schema_projection.ordered_fields.forEach(item => {
-    if (item.value !== null && item.value !== undefined) {
-      flatSummary[item.schema_field] = item.value;
-    }
-    if (item.reasoning) {
-      remarks[item.schema_field] = item.reasoning;
-    }
-  });
+  if (report.schema_projection && Array.isArray(report.schema_projection.ordered_fields)) {
+    report.schema_projection.ordered_fields.forEach(item => {
+      if (item.value !== null && item.value !== undefined) {
+        flatSummary[item.schema_field] = item.value;
+      }
+      if (item.reasoning) {
+        remarks[item.schema_field] = item.reasoning;
+      }
+    });
+  } else {
+    // Legacy Fallback: If no schema projection, use top-level fields (excluding known metadata)
+    console.log('[DEBUG] Legacy report detected, falling back to top-level fields');
+    Object.entries(report as any).forEach(([k, v]) => {
+      if (!['_errors', '_token_usage', 'source_documents', 'validation_summary', 'bounding_boxes', 'citations', 'key_details'].includes(k)) {
+        flatSummary[k] = v;
+      }
+    });
+  }
 
   // 2. Build Bounding Boxes & Citations from Field Entities
   const entityMap = new Map((report.field_entities || []).map(e => [e.field_id, e]));
 
-  // Helper function to extract array index and field name from field entity names
-  // e.g., "family_member_1_name_form" -> { arrayField: "family_members", index: 0, subField: "name" }
-  const parseArrayFieldEntity = (fieldName: string, schemaField: string): { arrayField: string; index: number; subField: string } | null => {
-    // Pattern: {singular}_N_{subfield}_{source}
-    // e.g., family_member_1_name_form, family_member_2_age_proof
-    const match = fieldName.match(/^(.+?)_(\d+)_([^_]+)(?:_.*)?$/);
-    if (match) {
-      const [, singular, indexStr, subField] = match;
-      const index = parseInt(indexStr) - 1; // Convert 1-based to 0-based
+  // Pick up existing bounding boxes if they exist (Legacy Support)
+  if ((report as any).bounding_boxes) {
+    Object.entries((report as any).bounding_boxes).forEach(([k, v]) => {
+      bboxes[k] = v as any[];
+    });
+  }
 
-      // Check if schemaField matches the plural form
-      // Simple heuristic: add 's' to singular
-      const expectedPlural = singular + 's';
-      if (schemaField === expectedPlural || schemaField.startsWith(expectedPlural)) {
-        return { arrayField: schemaField, index, subField };
-      }
-    }
+  // Helper to extract member identifier from field_id
+  // e.g., "fe_fm_paluri_kamalavathi_aadhaar_1" -> "paluri_kamalavathi"
+  const extractMemberIdentifier = (fieldId: string): string | null => {
+    const match = fieldId.match(/^fe_fm_(.+?)_(?:aadhaar|dob|yob|name)_\d+$/i);
+    return match ? match[1] : null;
+  };
+
+  // Helper to normalize names for comparison
+  const normalizeName = (name: string): string => {
+    return name.toLowerCase().replace(/[^a-z]/g, '');
+  };
+
+  // Helper to map field_id subfield (e.g., "aadhaar", "dob") to schema subfield
+  const mapSubfield = (fieldId: string): string | null => {
+    if (fieldId.includes('_aadhaar_')) return 'aadhaar';
+    if (fieldId.includes('_dob_') || fieldId.includes('_yob_')) return 'age';
+    if (fieldId.includes('_name_')) return 'name';
     return null;
   };
 
-  report.schema_projection.ordered_fields.forEach(item => {
-    const derivedIds = item.derived_from || [];
-    const key = item.schema_field;
+  if (report.schema_projection && Array.isArray(report.schema_projection.ordered_fields)) {
+    report.schema_projection.ordered_fields.forEach(item => {
+      const derivedIds = item.derived_from || [];
+      const key = item.schema_field;
+      const value = item.value;
 
-    derivedIds.forEach(fid => {
-      const ent = entityMap.get(fid);
-      if (ent) {
-        // Try to parse if this is an array field entity
-        const arrayInfo = parseArrayFieldEntity(ent.field_name, key);
+      // Check if this is an array field
+      const isArrayField = Array.isArray(value);
 
-        // Determine the target key for bounding boxes
+      if (isArrayField && value.length > 0) {
+        console.log(`[DEBUG] Processing array field: ${key}, length: ${value.length}`);
+      }
+
+      derivedIds.forEach(fid => {
+        const ent = entityMap.get(fid);
+        if (!ent) return;
+
         let targetKey = key;
-        if (arrayInfo) {
-          // This is an array element field, use flattened key
-          targetKey = `${arrayInfo.arrayField}[${arrayInfo.index}].${arrayInfo.subField}`;
+
+        // If this is an array field, try to match the entity to a specific array element
+        if (isArrayField && value.length > 0) {
+          let matchIndex = -1;
+          let subfield = mapSubfield(fid);
+
+          // 1. Try to extract identifier from common patterns
+          let identifier = extractMemberIdentifier(fid);
+
+          // 2. If no identifier, check if the fid itself contains a member's name
+          if (!identifier) {
+            matchIndex = value.findIndex((member: any) => {
+              if (!member.name) return false;
+              const normName = normalizeName(member.name);
+              const normFid = fid.toLowerCase();
+              return normFid.includes(normName) && normName.length > 3;
+            });
+          } else {
+            // 3. Match identifier to member name
+            const normId = normalizeName(identifier);
+            matchIndex = value.findIndex((member: any) => {
+              if (!member.name) return false;
+              const normName = normalizeName(member.name);
+              return normName.includes(normId) || normId.includes(normName);
+            });
+          }
+
+          // 4. Try to determine subfield more broadly if not already found
+          if (!subfield) {
+            const fidLower = fid.toLowerCase();
+            if (fidLower.includes('aadhaar')) subfield = 'aadhaar';
+            else if (fidLower.includes('dob') || fidLower.includes('age') || fidLower.includes('yob')) subfield = 'age';
+            else if (fidLower.includes('gender') || fidLower.includes('sex')) subfield = 'gender';
+            else if (fidLower.includes('relat')) subfield = 'relationship';
+            else if (fidLower.includes('name')) subfield = 'name';
+          }
+
+          if (matchIndex !== -1 && subfield) {
+            targetKey = `${key}[${matchIndex}].${subfield}`;
+            console.log(`[DEBUG] Matched ${fid} -> ${targetKey}`);
+          } else if (matchIndex !== -1) {
+            // If we matched the person but not the specific field, 
+            // we can still attach it to the person object or let it stay at array level
+            // Stay at array level for now or try to guess? 
+            // Let's stick with specific fields for now.
+          }
         }
 
         // Bounding Boxes
@@ -448,9 +514,9 @@ export function transformToSessionDetail(report: UniversalResponse, applicationT
             citations[targetKey].push(snippet);
           }
         }
-      }
+      });
     });
-  });
+  }
 
   // 3. Capture Unmapped Entites with Bounding Boxes (Supplementary Data)
   const unmappedSummary: Record<string, any> = {};
@@ -511,6 +577,9 @@ export function transformToSessionDetail(report: UniversalResponse, applicationT
         : ''))
     };
   });
+
+  console.log('[DEBUG] Final bounding boxes keys:', Object.keys(bboxes));
+  console.log('[DEBUG] Bounding boxes:', bboxes);
 
   return {
     session_id: report.metadata?.validation_id || report.metadata?.extraction_session_id || `temp-${Date.now()}`,
