@@ -299,6 +299,12 @@ class ApiClient {
     return this.request<{ supported_types: string[]; count: number }>('/validate-form/supported-types');
   }
 
+  // Used for session verification
+  async getStats(): Promise<any> {
+    // We use listSessions as a proxy to verify the session is valid
+    return this.listSessions(1, 0);
+  }
+
   async submitFeedback(sessionId: string, field: string, type: 'upvote' | 'downvote', text?: string): Promise<void> {
     return this.request<void>(`/v1/validation-sessions/${sessionId}/feedback`, {
       method: 'POST',

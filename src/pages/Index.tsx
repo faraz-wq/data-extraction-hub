@@ -15,7 +15,7 @@ export default function Index() {
 
   // Redirect if already authenticated
   if (isAuthenticated) {
-    navigate('/extract');
+    navigate('/extractions');
     return null;
   }
 
@@ -29,7 +29,7 @@ export default function Index() {
         title: 'Welcome back!',
         description: 'You have successfully logged in.',
       });
-      navigate('/extract');
+      navigate('/extractions');
     } catch (error) {
       toast({
         title: 'Login failed',
