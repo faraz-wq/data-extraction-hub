@@ -406,24 +406,58 @@ export function transformToSessionDetail(report: UniversalResponse, applicationT
     });
   }
 
-  // Helper to extract member identifier from field_id
-  // e.g., "fe_fm_paluri_kamalavathi_aadhaar_1" -> "paluri_kamalavathi"
-  const extractMemberIdentifier = (fieldId: string): string | null => {
-    const match = fieldId.match(/^fe_fm_(.+?)_(?:aadhaar|dob|yob|name)_\d+$/i);
-    return match ? match[1] : null;
+  const extractMemberInfo = (fieldId: string): { index: number; subfield: string } | null => {
+    const match = fieldId.match(/^fe_fm(\d+)_(\w+)_/i);
+    if (!match) return null;
+
+    const memberNum = parseInt(match[1], 10);
+    const fieldName = match[2].toLowerCase();
+
+    // Map field names to schema subfields
+    let subfield = fieldName;
+    if (fieldName === 'dob' || fieldName === 'yob') subfield = 'age';
+
+    return {
+      index: memberNum - 1, // Convert to 0-based index
+      subfield: subfield
+    };
   };
 
-  // Helper to normalize names for comparison
+  // Helper to extract nested object field info (deceased_details, income_details, asset_details)
+  const extractNestedObjectInfo = (fieldId: string): { parentField: string; subfield: string } | null => {
+    // Pattern: fe_dd_{subfield}_{source} for deceased_details
+    // Pattern: fe_id_{subfield}_{source} for income_details
+    // Pattern: fe_ad_{subfield}_{source} for asset_details
+    const ddMatch = fieldId.match(/^fe_dd_(\w+)_/i);
+    if (ddMatch) {
+      return {
+        parentField: 'deceased_details',
+        subfield: ddMatch[1]
+      };
+    }
+
+    const idMatch = fieldId.match(/^fe_id_(\w+)_/i);
+    if (idMatch) {
+      return {
+        parentField: 'income_details',
+        subfield: idMatch[1]
+      };
+    }
+
+    const adMatch = fieldId.match(/^fe_ad_(\w+)_/i);
+    if (adMatch) {
+      return {
+        parentField: 'asset_details',
+        subfield: adMatch[1]
+      };
+    }
+
+    return null;
+  };
+
+  // Helper to normalize names for comparison (kept for backward compatibility)
   const normalizeName = (name: string): string => {
     return name.toLowerCase().replace(/[^a-z]/g, '');
-  };
-
-  // Helper to map field_id subfield (e.g., "aadhaar", "dob") to schema subfield
-  const mapSubfield = (fieldId: string): string | null => {
-    if (fieldId.includes('_aadhaar_')) return 'aadhaar';
-    if (fieldId.includes('_dob_') || fieldId.includes('_yob_')) return 'age';
-    if (fieldId.includes('_name_')) return 'name';
-    return null;
   };
 
   if (report.schema_projection && Array.isArray(report.schema_projection.ordered_fields)) {
@@ -434,9 +468,15 @@ export function transformToSessionDetail(report: UniversalResponse, applicationT
 
       // Check if this is an array field
       const isArrayField = Array.isArray(value);
+      // Check if this is an object field (nested object like deceased_details)
+      const isObjectField = value !== null && typeof value === 'object' && !isArrayField;
 
       if (isArrayField && value.length > 0) {
         console.log(`[DEBUG] Processing array field: ${key}, length: ${value.length}`);
+      }
+
+      if (isObjectField) {
+        console.log(`[DEBUG] Processing object field: ${key}`);
       }
 
       derivedIds.forEach(fid => {
@@ -447,48 +487,48 @@ export function transformToSessionDetail(report: UniversalResponse, applicationT
 
         // If this is an array field, try to match the entity to a specific array element
         if (isArrayField && value.length > 0) {
-          let matchIndex = -1;
-          let subfield = mapSubfield(fid);
+          // Try to extract member info directly from field_id pattern
+          const memberInfo = extractMemberInfo(fid);
 
-          // 1. Try to extract identifier from common patterns
-          let identifier = extractMemberIdentifier(fid);
-
-          // 2. If no identifier, check if the fid itself contains a member's name
-          if (!identifier) {
-            matchIndex = value.findIndex((member: any) => {
-              if (!member.name) return false;
-              const normName = normalizeName(member.name);
-              const normFid = fid.toLowerCase();
-              return normFid.includes(normName) && normName.length > 3;
-            });
+          if (memberInfo && memberInfo.index < value.length) {
+            // Direct match using the index from field_id
+            targetKey = `${key}[${memberInfo.index}].${memberInfo.subfield}`;
+            console.log(`[DEBUG] Matched ${fid} -> ${targetKey}`);
           } else {
-            // 3. Match identifier to member name
-            const normId = normalizeName(identifier);
-            matchIndex = value.findIndex((member: any) => {
-              if (!member.name) return false;
-              const normName = normalizeName(member.name);
-              return normName.includes(normId) || normId.includes(normName);
-            });
-          }
+            // Fallback: Try name-based matching for backward compatibility
+            let matchIndex = -1;
+            let subfield: string | null = null;
 
-          // 4. Try to determine subfield more broadly if not already found
-          if (!subfield) {
+            // Extract subfield from field_id
             const fidLower = fid.toLowerCase();
             if (fidLower.includes('aadhaar')) subfield = 'aadhaar';
             else if (fidLower.includes('dob') || fidLower.includes('age') || fidLower.includes('yob')) subfield = 'age';
             else if (fidLower.includes('gender') || fidLower.includes('sex')) subfield = 'gender';
             else if (fidLower.includes('relat')) subfield = 'relationship';
             else if (fidLower.includes('name')) subfield = 'name';
-          }
 
-          if (matchIndex !== -1 && subfield) {
-            targetKey = `${key}[${matchIndex}].${subfield}`;
-            console.log(`[DEBUG] Matched ${fid} -> ${targetKey}`);
-          } else if (matchIndex !== -1) {
-            // If we matched the person but not the specific field, 
-            // we can still attach it to the person object or let it stay at array level
-            // Stay at array level for now or try to guess? 
-            // Let's stick with specific fields for now.
+            // Try to match by checking if field value matches any member's corresponding field
+            if (subfield && ent.field_value) {
+              const entValue = String(ent.field_value).toLowerCase().trim();
+              matchIndex = value.findIndex((member: any) => {
+                const memberValue = member[subfield];
+                if (!memberValue) return false;
+                return String(memberValue).toLowerCase().trim() === entValue;
+              });
+            }
+
+            if (matchIndex !== -1 && subfield) {
+              targetKey = `${key}[${matchIndex}].${subfield}`;
+              console.log(`[DEBUG] Fallback matched ${fid} -> ${targetKey}`);
+            }
+          }
+        } else if (isObjectField) {
+          // Handle nested object fields (deceased_details, income_details, asset_details)
+          const nestedInfo = extractNestedObjectInfo(fid);
+
+          if (nestedInfo && nestedInfo.parentField === key) {
+            targetKey = `${key}.${nestedInfo.subfield}`;
+            console.log(`[DEBUG] Matched nested object ${fid} -> ${targetKey}`);
           }
         }
 

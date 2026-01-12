@@ -318,27 +318,36 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
       <div className="flex-1 overflow-y-auto">
         {/* Collapsible Insights Panel */}
         {(result.validation_summary || (result.issues && result.issues.length > 0) || (result.field_remarks && Object.keys(result.field_remarks).length > 0)) && (
-          <div className="border-b border-border/20">
+          <div className="border-b border-border/20 bg-gradient-to-r from-indigo-50/30 to-transparent">
             <button
               onClick={() => setShowInsights(!showInsights)}
-              className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+              className="w-full px-4 py-3 flex items-center justify-between hover:bg-indigo-50/50 transition-all duration-200 group cursor-pointer rounded-lg mx-2 my-1"
             >
+              <div className="flex items-center gap-3">
+                <div className="p-1.5 rounded-lg bg-indigo-100 group-hover:bg-indigo-200 transition-colors">
+                  <Info className="w-4 h-4 text-indigo-600" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-foreground group-hover:text-indigo-900 transition-colors">
+                    Validation Insights
+                  </span>
+                  {result.issues && result.issues.length > 0 && (
+                    <Badge variant="destructive" className="h-5 text-[10px] px-2 font-bold shadow-sm">
+                      {result.issues.length} {result.issues.length === 1 ? 'Issue' : 'Issues'}
+                    </Badge>
+                  )}
+                </div>
+              </div>
               <div className="flex items-center gap-2">
-                <Info className="w-4 h-4 text-indigo-600" />
-                <span className="text-sm font-medium text-foreground">
-                  Validation Insights
+                <span className="text-xs text-muted-foreground group-hover:text-indigo-600 transition-colors font-medium">
+                  {showInsights ? 'Hide' : 'Show'}
                 </span>
-                {result.issues && result.issues.length > 0 && (
-                  <Badge variant="destructive" className="h-5 text-[10px] px-1.5">
-                    {result.issues.length} {result.issues.length === 1 ? 'Issue' : 'Issues'}
-                  </Badge>
+                {showInsights ? (
+                  <ChevronDown className="w-4 h-4 text-muted-foreground group-hover:text-indigo-600 transition-colors" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-indigo-600 transition-colors" />
                 )}
               </div>
-              {showInsights ? (
-                <ChevronDown className="w-4 h-4 text-muted-foreground" />
-              ) : (
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              )}
             </button>
 
             {showInsights && (
@@ -381,7 +390,7 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
                             "text-xs font-medium mb-0.5",
                             issue.severity === 'error' ? "text-red-900" : "text-amber-900"
                           )}>
-                            {issue.field || issue.schema_field}
+                            {formatFieldName(issue.field || issue.schema_field)}
                           </div>
                           <div className={cn(
                             "text-sm",
