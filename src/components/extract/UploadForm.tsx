@@ -68,7 +68,7 @@ export function UploadForm({ supportedTypes, isLoadingTypes, onExtract, isExtrac
   return (
     <Card className="border-none shadow-md bg-white/50 backdrop-blur-sm max-w-lg mx-auto">
       <CardHeader className="text-center pb-4 pt-6 border-b border-border/10">
-        <div className="mx-auto w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-3">
+        <div className="mx-auto w-10 h-10 bg-primary/10 rodocument_validation/dataunded-full flex items-center justify-center mb-3">
           <FileText className="w-5 h-5" style={{ stroke: "url(#tricolor-gradient)" }} />
         </div>
         <CardTitle className="text-lg font-semibold">Start Validation</CardTitle>
