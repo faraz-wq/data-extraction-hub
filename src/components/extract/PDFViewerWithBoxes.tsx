@@ -249,7 +249,10 @@ export function PDFViewerWithBoxes({
                 {isHighlighted && (
                   <div className="absolute -top-6 left-0 flex items-center gap-1.5 px-2 py-1 bg-[#5856D6] text-white text-[9px] font-bold rounded-md shadow-lg whitespace-nowrap z-30 animate-in fade-in zoom-in duration-200">
                     <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
-                    {box.field.replace(/_/g, ' ').toUpperCase()}
+                    {box.field
+                      .replace(/_/g, ' ')
+                      .replace(/\[(\d+)\]/g, (_, index) => ` ${parseInt(index) + 1}`)
+                      .toUpperCase()}
                     {allHighlightBoxes.length > 1 && (
                       <span className="opacity-60 border-l border-white/20 pl-1.5 ml-0.5">
                         {allHighlightBoxes.findIndex(b => b.page === box.page && b.index === box.index) + 1} OF {allHighlightBoxes.length}

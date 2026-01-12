@@ -98,7 +98,8 @@ export default function Extractions() {
                     /* Empty State */
                     <div className="text-center py-12">
                         <svg
-                            className="mx-auto h-12 w-12 text-gray-400"
+                            className="mx-auto h-12 w-12"
+                            style={{ stroke: "url(#tricolor-gradient)" }}
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"

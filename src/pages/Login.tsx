@@ -83,12 +83,14 @@ export default function Login() {
               </Button>
             </form>
 
-            <div className="mt-6 text-center text-sm text-muted-foreground">
+
+            {/* TEMPORARILY DISABLED FOR TESTING */}
+            {/* <div className="mt-6 text-center text-sm text-muted-foreground">
               Don't have an account?{' '}
               <Link to="/register" className="text-foreground hover:underline font-medium">
                 Create account
               </Link>
-            </div>
+            </div> */}
           </CardContent>
         </Card>
       </div>

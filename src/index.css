@@ -15,7 +15,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 0%;
 
-    --primary: 0 0% 0%;
+    /* Indian Saffron (Orange) */
+    --primary: 28 92% 53%; 
     --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 96%;
@@ -30,7 +31,8 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 71% 45%;
+    /* Indian Green */
+    --success: 146 100% 27%;
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
@@ -38,22 +40,23 @@
 
     --border: 0 0% 90%;
     --input: 0 0% 90%;
-    --ring: 0 0% 0%;
+    --ring: 28 92% 53%; /* Saffron ring */
 
     --radius: 0.625rem;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 0 0% 40%;
-    --sidebar-primary: 0 0% 0%;
+    --sidebar-primary: 28 92% 53%; /* Saffron sidebar active */
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 96%;
     --sidebar-accent-foreground: 0 0% 0%;
     --sidebar-border: 0 0% 92%;
-    --sidebar-ring: 0 0% 0%;
+    --sidebar-ring: 28 92% 53%;
 
-    --chart-1: 0 0% 20%;
-    --chart-2: 0 0% 40%;
-    --chart-3: 0 0% 60%;
+    /* Chart Colors - Flag Theme */
+    --chart-1: 28 92% 53%; /* Saffron */
+    --chart-2: 240 100% 25%; /* Navy Blue (Chakra) */
+    --chart-3: 146 100% 27%; /* Green */
     --chart-4: 0 0% 80%;
     --chart-5: 0 0% 90%;
   }

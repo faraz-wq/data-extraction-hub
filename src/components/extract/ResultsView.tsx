@@ -229,7 +229,7 @@ export function ResultsView({ result, onFieldHover, onFieldClick, highlightedFie
   const formatFieldName = (name: string): string => {
     return name
       .replace(/_/g, ' ')
-      .replace(/\[(\d+)\]/g, ' $1')
+      .replace(/\[(\d+)\]/g, (_, index) => ` ${parseInt(index) + 1}`)
       .split('.')
       .map(part =>
         part

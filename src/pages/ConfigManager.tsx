@@ -153,7 +153,7 @@ export default function ConfigManager() {
                             >
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2 text-lg">
-                                        <FileText className="w-5 h-5 text-primary" />
+                                        <FileText className="w-5 h-5" style={{ stroke: "url(#tricolor-gradient)" }} />
                                         {config.application_type}
                                     </CardTitle>
                                     <CardDescription>
@@ -166,7 +166,7 @@ export default function ConfigManager() {
                                             {config.key_details.slice(0, 3).map((detail) => (
                                                 <span
                                                     key={detail.field_path}
-                                                    className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-md font-medium"
+                                                    className="px-2 py-1 bg-gradient-to-r from-[#F97316] via-[#000088] to-[#16A34A] text-white text-xs rounded-md font-medium shadow-sm"
                                                 >
                                                     {detail.display_name}
                                                 </span>
