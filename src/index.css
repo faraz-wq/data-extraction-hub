@@ -138,3 +138,18 @@
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-field {
+  opacity: 0;
+  animation: fadeInRight 0.3s ease-out forwards;
+}

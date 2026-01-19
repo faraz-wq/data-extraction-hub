@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Plus, Edit, Trash2, Copy, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/lib/api';
+import { cn } from '@/lib/utils';
 import { ConfigEditor } from '@/components/config/ConfigEditor';
 import {
     AlertDialog,
@@ -44,8 +45,16 @@ export default function ConfigManager() {
     const [configs, setConfigs] = useState<ValidationConfig[]>([]);
     const [loading, setLoading] = useState(true);
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+    const [expandedConfigs, setExpandedConfigs] = useState<Record<string, boolean>>({});
     const { toast } = useToast();
     const navigate = useNavigate();
+
+    const toggleExpand = (appType: string) => {
+        setExpandedConfigs(prev => ({
+            ...prev,
+            [appType]: !prev[appType]
+        }));
+    };
 
     useEffect(() => {
         loadConfigs();
@@ -146,68 +155,98 @@ export default function ConfigManager() {
                     </Card>
                 ) : (
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {configs.map((config) => (
-                            <Card
-                                key={config.application_type}
-                                className="group hover:shadow-lg transition-all duration-200"
-                            >
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2 text-lg">
-                                        <FileText className="w-5 h-5" style={{ stroke: "url(#tricolor-gradient)" }} />
-                                        {config.application_type}
-                                    </CardTitle>
-                                    <CardDescription>
-                                        {config.key_details.length} fields • {config.rules.length} rules
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-3">
-                                        <div className="flex flex-wrap gap-2">
-                                            {config.key_details.slice(0, 3).map((detail) => (
-                                                <span
-                                                    key={detail.field_path}
-                                                    className="px-2 py-1 bg-gradient-to-r from-[#F97316] via-[#000088] to-[#16A34A] text-white text-xs rounded-md font-medium shadow-sm"
-                                                >
-                                                    {detail.display_name}
-                                                </span>
-                                            ))}
-                                            {config.key_details.length > 3 && (
-                                                <span className="px-2 py-1 bg-muted text-muted-foreground text-xs rounded-md">
-                                                    +{config.key_details.length - 3} more
-                                                </span>
-                                            )}
-                                        </div>
+                        {configs.map((config) => {
+                            const isExpanded = expandedConfigs[config.application_type];
+                            return (
+                                <Card
+                                    key={config.application_type}
+                                    className="group hover:shadow-lg transition-all duration-300 ease-in-out border-slate-200"
+                                >
+                                    <CardHeader className={cn(
+                                        "transition-none",
+                                        isExpanded ? "p-4 pb-2" : "p-6"
+                                    )}>
+                                        <CardTitle className="flex items-center gap-2 text-lg">
+                                            <FileText className="w-5 h-5 transition-transform duration-300" style={{ stroke: "url(#tricolor-gradient)" }} />
+                                            {config.application_type}
+                                        </CardTitle>
+                                        <CardDescription className={isExpanded ? "text-[11px]" : ""}>
+                                            {config.key_details.length} fields • {config.rules.length} rules
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent className={cn(
+                                        "transition-none",
+                                        isExpanded ? "px-4 pb-4 pt-0" : "px-6 pb-6 pt-0"
+                                    )}>
+                                        <div className={cn(
+                                            "transition-none",
+                                            isExpanded ? "space-y-1" : "space-y-3"
+                                        )}>
+                                            <div className={cn(
+                                                "flex flex-wrap transition-none",
+                                                isExpanded ? "gap-1" : "gap-2"
+                                            )}>
+                                                {(isExpanded ? config.key_details : config.key_details.slice(0, 3)).map((detail, idx) => (
+                                                    <span
+                                                        key={`${isExpanded ? 'exp-' : 'col-'}${detail.field_path}`}
+                                                        className={cn(
+                                                            "text-xs font-medium inline-block",
+                                                            isExpanded ? "px-1 py-0.5 animate-field" : "px-1 py-1"
+                                                        )}
+                                                        style={isExpanded ? { animationDelay: `${idx * 0.03}s` } : {}}
+                                                    >
+                                                        <span className="text-slate-900 italic underline decoration-[#F97316]/40 underline-offset-[3px] decoration-[1.5px] transition-all hover:decoration-[#F97316]/80">
+                                                            {detail.display_name}
+                                                        </span>
+                                                    </span>
+                                                ))}
+                                                {config.key_details.length > 3 && (
+                                                    <button
+                                                        onClick={() => toggleExpand(config.application_type)}
+                                                        className={cn(
+                                                            "bg-transparent text-[#F97316] hover:underline text-xs transition-all font-medium hover:scale-105 active:scale-95",
+                                                            isExpanded ? "px-1 py-0.5 opacity-60 hover:opacity-100" : "px-1 py-1"
+                                                        )}
+                                                    >
+                                                        {isExpanded ? 'Show Less' : `+${config.key_details.length - 3} more`}
+                                                    </button>
+                                                )}
+                                            </div>
 
-                                        <div className="flex gap-2 pt-4">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => handleEdit(config)}
-                                                className="flex-1"
-                                            >
-                                                <Edit className="w-4 h-4 mr-1" />
-                                                Edit
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => handleDuplicate(config)}
-                                            >
-                                                <Copy className="w-4 h-4" />
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setDeleteTarget(config.application_type)}
-                                                className="text-destructive hover:bg-destructive/10"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
+                                            <div className={cn(
+                                                "flex gap-2 transition-all duration-300",
+                                                isExpanded ? "pt-2" : "pt-4"
+                                            )}>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleEdit(config)}
+                                                    className="flex-1"
+                                                >
+                                                    <Edit className="w-4 h-4 mr-1" />
+                                                    Edit
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleDuplicate(config)}
+                                                >
+                                                    <Copy className="w-4 h-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setDeleteTarget(config.application_type)}
+                                                    className="text-destructive hover:bg-destructive/10"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </div>
                                         </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
+                                    </CardContent>
+                                </Card>
+                            );
+                        })}
                     </div>
                 )}
             </div>
