@@ -160,7 +160,7 @@ export default function ConfigManager() {
                             return (
                                 <Card
                                     key={config.application_type}
-                                    className="group hover:shadow-lg transition-all duration-300 ease-in-out border-slate-200"
+                                    className="group hover:shadow-lg transition-all duration-300 ease-in-out border-slate-200 flex flex-col h-full"
                                 >
                                     <CardHeader className={cn(
                                         "transition-none",
@@ -176,11 +176,11 @@ export default function ConfigManager() {
                                     </CardHeader>
                                     <CardContent className={cn(
                                         "transition-none",
-                                        isExpanded ? "px-4 pb-4 pt-0" : "px-6 pb-6 pt-0"
+                                        isExpanded ? "px-4 pb-4 pt-0 flex flex-col flex-1" : "px-6 pb-6 pt-0 flex flex-col flex-1"
                                     )}>
                                         <div className={cn(
-                                            "transition-none",
-                                            isExpanded ? "space-y-1" : "space-y-3"
+                                            "transition-none flex flex-col flex-1",
+                                            isExpanded ? "gap-1" : "gap-3"
                                         )}>
                                             <div className={cn(
                                                 "flex flex-wrap transition-none",
@@ -214,7 +214,7 @@ export default function ConfigManager() {
                                             </div>
 
                                             <div className={cn(
-                                                "flex gap-2 transition-all duration-300",
+                                                "flex gap-2 transition-all duration-300 mt-auto",
                                                 isExpanded ? "pt-2" : "pt-4"
                                             )}>
                                                 <Button
