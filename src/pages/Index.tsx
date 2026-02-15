@@ -112,10 +112,10 @@ export default function Index() {
                 key={item.id}
                 onClick={() => document.getElementById(item.target)?.scrollIntoView({ behavior: 'smooth' })}
                 className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 ${activeSection === item.id
-                    ? 'bg-white text-primary shadow-[0_2px_8px_rgba(0,0,0,0.08)] scale-105'
-                    : scrollY > 20
-                      ? 'text-gray-500 hover:text-gray-900 hover:bg-black/5'
-                      : 'text-muted-foreground hover:text-primary hover:bg-white/50'
+                  ? 'bg-white text-primary shadow-[0_2px_8px_rgba(0,0,0,0.08)] scale-105'
+                  : scrollY > 20
+                    ? 'text-gray-500 hover:text-gray-900 hover:bg-black/5'
+                    : 'text-muted-foreground hover:text-primary hover:bg-white/50'
                   }`}
               >
                 {item.label}
@@ -313,30 +313,30 @@ export default function Index() {
 
             {/* Right Grid */}
             <div className="order-1 lg:order-2 grid grid-cols-2 gap-6 w-full max-w-lg mx-auto">
-              {/* Lead Engineer */}
+              {/* Applied AI Fellow */}
               <div className="bg-white p-4 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 hover:-translate-y-2 transition-transform duration-300">
                 <div className="aspect-square rounded-xl bg-orange-50 mb-4 overflow-hidden relative group cursor-pointer">
                   <img
-                    src="https://api.dicebear.com/7.x/avataaars/svg?seed=LeadEngineer&backgroundColor=ffdfbf"
-                    alt="Lead Engineer"
+                    src="/IMG_20260117_133607429_HDR_PORTRAIT.jpg"
+                    alt="Applied AI Fellow"
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                 </div>
                 <h4 className="font-bold text-gray-900">Faraz Ahmed</h4>
-                <p className="text-xs text-primary font-medium tracking-wide border-t border-gray-100 pt-2 mt-2">LEAD ENGINEER</p>
+                <p className="text-xs text-primary font-medium tracking-wide border-t border-gray-100 pt-2 mt-2">Applied AI Fellow</p>
               </div>
 
-              {/* Assistant Engineer */}
+              {/* Applied AI Intern */}
               <div className="bg-white p-4 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 hover:-translate-y-2 transition-transform duration-300 translate-y-8">
                 <div className="aspect-square rounded-xl bg-green-50 mb-4 overflow-hidden relative group cursor-pointer">
                   <img
-                    src="https://api.dicebear.com/7.x/avataaars/svg?seed=AssistantEng&backgroundColor=c0aede"
-                    alt="Assistant Engineer"
+                    src="/IMG-20260215-WA0053.jpg"
+                    alt="Applied AI Intern"
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                 </div>
                 <h4 className="font-bold text-gray-900">Antigravity</h4>
-                <p className="text-xs text-primary font-medium tracking-wide border-t border-gray-100 pt-2 mt-2">ASSISTANT ENGINEER</p>
+                <p className="text-xs text-primary font-medium tracking-wide border-t border-gray-100 pt-2 mt-2">Applied AI intern</p>
               </div>
             </div>
           </div>
