@@ -332,7 +332,7 @@ export default function Index() {
                   <img
                     src="/IMG-20260215-WA0053.jpg"
                     alt="Applied AI Intern"
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    className="w-full h-full object-cover object-top group-hover:scale-110 transition-transform duration-500"
                   />
                 </div>
                 <h4 className="font-bold text-gray-900">Antigravity</h4>
