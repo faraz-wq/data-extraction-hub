@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
-import { CheckCircle2, Shield, Zap, Users, Code2, Database } from 'lucide-react';
+import { CheckCircle2, Shield, Zap, Users, Code2, Database, Globe } from 'lucide-react';
 
 export default function Index() {
   const [email, setEmail] = useState('');
@@ -33,7 +33,7 @@ export default function Index() {
     const handleScroll = () => {
       setScrollY(container.scrollTop);
       const sectionIndex = Math.round(container.scrollTop / window.innerHeight);
-      const sections = ['hero', 'project', 'team'];
+      const sections = ['hero', 'project', 'about', 'team'];
       setActiveSection(sections[sectionIndex] || 'hero');
     };
 
@@ -106,6 +106,7 @@ export default function Index() {
             {[
               { id: 'hero', label: 'Login', target: 'hero' },
               { id: 'project', label: 'Features', target: 'project' },
+              { id: 'about', label: 'About', target: 'about' },
               { id: 'team', label: 'Team', target: 'team' }
             ].map((item) => (
               <button
@@ -276,27 +277,79 @@ export default function Index() {
           </div>
         </section>
 
-        {/* Section 3: Team */}
+        {/* Section 3: About Tech Bharat */}
+        <section id="about" className="h-screen w-full snap-start snap-always relative overflow-hidden flex items-center justify-center">
+          <div className="max-w-[1400px] w-full px-6 relative z-10 flex flex-col justify-center h-full">
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center px-4 py-1.5 rounded-full border border-primary/20 bg-white/60 backdrop-blur-sm text-primary text-xs font-semibold tracking-wide uppercase mb-6">
+                Our Organization
+              </div>
+              <h2 className="text-4xl lg:text-5xl font-bold mb-8 tracking-tight">Tech Bharat: <span className="text-[#000088]">Building AI for Public Good</span></h2>
+              <p className="text-xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
+                Tech Bharat is a non-profit organization dedicated to pioneering the next generation of 'i-governance'—systems that are <span className="text-primary font-bold">Intelligent, Inclusive, and Iterative</span>.
+              </p>
+              <p className="mt-8 text-lg text-muted-foreground max-w-4xl mx-auto leading-relaxed">
+                We believe that public infrastructure should be built on the foundations of trust and sovereignty. Through strategic collaborations like the <span className="font-bold text-[#000088]">'AI for Bharat'</span> initiative in Andhra Pradesh, we are developing scalable digital public assets that empower governments to serve their people with unprecedented efficiency and care.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {[
+                {
+                  title: "Responsible AI",
+                  desc: "Ensuring every algorithm is grounded in truth, with strict human-in-the-loop oversight and bias mitigation.",
+                  icon: <Shield className="w-6 h-6" />,
+                  color: "orange"
+                },
+                {
+                  title: "Open Innovation",
+                  desc: "Utilizing and contributing to the global open-source ecosystem to build transparent and auditable tools.",
+                  icon: <Code2 className="w-6 h-6" />,
+                  color: "blue"
+                },
+                {
+                  title: "Sovereign Sustainability",
+                  desc: "Designing systems that run on state-owned infrastructure, ensuring long-term independence and security.",
+                  icon: <Zap className="w-6 h-6" />,
+                  color: "green"
+                }
+              ].map((val) => (
+                <div key={val.title} className="p-8 rounded-3xl bg-white/60 backdrop-blur-md border border-white/40 shadow-sm hover:shadow-xl transition-all duration-500 group">
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform ${val.color === 'orange' ? 'bg-orange-100 text-orange-600' :
+                    val.color === 'blue' ? 'bg-blue-100 text-[#000088]' :
+                      'bg-green-100 text-green-700'
+                    }`}>
+                    {val.icon}
+                  </div>
+                  <h4 className="font-bold text-xl mb-3 text-gray-900">{val.title}</h4>
+                  <p className="text-gray-500 leading-relaxed text-sm">{val.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Section 4: Team & Philosophy */}
         <section id="team" className="h-screen w-full snap-start snap-always relative overflow-hidden flex items-center justify-center">
           <div className="max-w-[1400px] w-full px-6 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
 
             {/* Left Text */}
             <div className="order-2 lg:order-1">
               <div className="mb-10">
-                <h2 className="text-4xl lg:text-6xl font-bold mb-6">The <span className="text-[#000088] underline decoration-wavy decoration-orange-400 underline-offset-8">Mindset</span></h2>
-                <p className="text-xl text-muted-foreground">
-                  Driven by a passion for automation and accuracy. Our team combines decades of experience in AI, Compliance, and Software Engineering.
+                <h2 className="text-4xl lg:text-6xl font-bold mb-6">The <span className="text-[#000088] underline decoration-wavy decoration-orange-400 underline-offset-8">Philosophy</span></h2>
+                <p className="text-xl text-muted-foreground leading-relaxed">
+                  Building AI for the public good. We specialize in transforming manual, paper-heavy governance into seamless, intelligent digital experiences that respect the time of both citizens and officers.
                 </p>
               </div>
 
               <div className="space-y-6">
                 <div className="flex items-start gap-4 p-4 rounded-xl hover:bg-white hover:shadow-md transition-all duration-300">
                   <div className="mt-1 w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 shrink-0">
-                    <Code2 className="w-5 h-5" />
+                    <Globe className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-lg text-gray-900">Engineering Excellence</h4>
-                    <p className="text-gray-500">Robust, scalable code structures designed for high availability.</p>
+                    <h4 className="font-bold text-lg text-gray-900">Sovereign Innovation</h4>
+                    <p className="text-gray-500">Leveraging open-source excellence—from Gemma LLMs to Tesseract OCR—to build secure, locally-hosted systems.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4 p-4 rounded-xl hover:bg-white hover:shadow-md transition-all duration-300">
@@ -304,8 +357,8 @@ export default function Index() {
                     <Users className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-lg text-gray-900">Customer Centric</h4>
-                    <p className="text-gray-500">We build what you need, with 24/7 dedicated support channels.</p>
+                    <h4 className="font-bold text-lg text-gray-900">Citizen-First Intelligence</h4>
+                    <p className="text-gray-500">Our systems act as an intelligent Copilot, cutting processing times by 70% while ensuring transparency.</p>
                   </div>
                 </div>
               </div>
@@ -322,7 +375,7 @@ export default function Index() {
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                 </div>
-                <h4 className="font-bold text-gray-900">Faraz Ahmed</h4>
+                <h4 className="font-bold text-gray-900">Faraz Pathan</h4>
                 <p className="text-xs text-primary font-medium tracking-wide border-t border-gray-100 pt-2 mt-2">Applied AI Fellow</p>
               </div>
 
@@ -335,7 +388,7 @@ export default function Index() {
                     className="w-full h-full object-cover object-top group-hover:scale-110 transition-transform duration-500"
                   />
                 </div>
-                <h4 className="font-bold text-gray-900">Antigravity</h4>
+                <h4 className="font-bold text-gray-900">Neha Sureddi</h4>
                 <p className="text-xs text-primary font-medium tracking-wide border-t border-gray-100 pt-2 mt-2">Applied AI intern</p>
               </div>
             </div>
@@ -343,7 +396,7 @@ export default function Index() {
 
           {/* Footer Absolute Bottom */}
           <div className="absolute bottom-6 left-0 right-0 text-center text-xs text-gray-400">
-            <p>© 2024 DocValidate. Proudly made in India 🇮🇳</p>
+            <p>© 2025 DocValidate. Proudly made in India 🇮🇳</p>
           </div>
         </section>
       </main>
