@@ -33,7 +33,7 @@ export default function Index() {
     const handleScroll = () => {
       setScrollY(container.scrollTop);
       const sectionIndex = Math.round(container.scrollTop / window.innerHeight);
-      const sections = ['hero', 'project', 'about', 'team'];
+      const sections = ['hero', 'project', 'team', 'about'];
       setActiveSection(sections[sectionIndex] || 'hero');
     };
 
@@ -79,15 +79,15 @@ export default function Index() {
         style={{ transform: `translateY(${scrollY * 0.2}px) translateX(-${scrollY * 0.05}px)` }}
       />
       <div
-        className="fixed bottom-[-20%] left-[-10%] w-[60rem] h-[60rem] bg-[#000088]/10 rounded-full blur-[120px] z-0 transition-transform duration-300 ease-out mix-blend-multiply"
+        className="fixed bottom-[-20%] left-[-10%] w-[60rem] h-[60rem] bg-[#000088]/10 rounded-full blur-[120px] z-0 transition-transform duration-1000 ease-out mix-blend-multiply"
         style={{ transform: `translateY(${-scrollY * 0.1}px) translateX(${scrollY * 0.05}px)` }}
       />
 
       {/* Nav */}
       <nav
-        className={`fixed z-50 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${scrollY > 20
-          ? 'top-4 left-1/2 -translate-x-1/2 w-fit rounded-full bg-white/80 backdrop-blur-xl border border-white/40 shadow-lg shadow-black/5 py-2 px-4'
-          : 'top-0 left-0 right-0 w-full max-w-[1400px] mx-auto bg-transparent py-6 px-8'
+        className={`fixed z-50 left-1/2 -translate-x-1/2 transition-all ${scrollY > 20
+          ? 'duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] top-4 w-[95%] max-w-[800px] rounded-full bg-white/80 backdrop-blur-xl border border-white/40 shadow-lg shadow-black/5 py-2 px-4'
+          : 'duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)] top-0 w-full max-w-[1400px] bg-transparent py-6 px-8'
           }`}
       >
         <div className="flex items-center gap-4 sm:gap-8 justify-between w-full">
@@ -106,8 +106,8 @@ export default function Index() {
             {[
               { id: 'hero', label: 'Login', target: 'hero' },
               { id: 'project', label: 'Features', target: 'project' },
-              { id: 'about', label: 'About', target: 'about' },
-              { id: 'team', label: 'Team', target: 'team' }
+              { id: 'team', label: 'Team', target: 'team' },
+              { id: 'about', label: 'About', target: 'about' }
             ].map((item) => (
               <button
                 key={item.id}
@@ -224,7 +224,7 @@ export default function Index() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch h-[50vh] min-h-[400px]">
               {/* Saffron Pillar */}
-              <div className="group relative flex flex-col p-8 rounded-3xl border border-orange-100 bg-white/80 hover:bg-orange-50/50 transition-colors duration-500 hover:border-orange-200 shadow-sm hover:shadow-xl hover:shadow-orange-100/50">
+              <div className="group relative flex flex-col p-8 rounded-3xl border border-orange-100 bg-white/80 hover:bg-orange-50/50 transition-all duration-700 ease-in-out hover:border-orange-200 shadow-sm hover:shadow-xl hover:shadow-orange-100/50">
                 <div className="absolute top-0 left-0 w-full h-1 bg-orange-500 rounded-t-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="w-14 h-14 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                   <Shield className="w-7 h-7" />
@@ -241,7 +241,7 @@ export default function Index() {
               </div>
 
               {/* Chakra Blue Pillar */}
-              <div className="group relative flex flex-col p-8 rounded-3xl border border-blue-100 bg-white/80 hover:bg-blue-50/50 transition-colors duration-500 hover:border-blue-200 shadow-sm hover:shadow-xl hover:shadow-blue-100/50 translate-y-0 md:-translate-y-4">
+              <div className="group relative flex flex-col p-8 rounded-3xl border border-blue-100 bg-white/80 hover:bg-blue-50/50 transition-all duration-700 ease-in-out hover:border-blue-200 shadow-sm hover:shadow-xl hover:shadow-blue-100/50 translate-y-0 md:-translate-y-4">
                 <div className="absolute top-0 left-0 w-full h-1 bg-[#000088] rounded-t-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="w-14 h-14 rounded-2xl bg-blue-100 text-[#000088] flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                   <Database className="w-7 h-7" />
@@ -258,7 +258,7 @@ export default function Index() {
               </div>
 
               {/* Green Pillar */}
-              <div className="group relative flex flex-col p-8 rounded-3xl border border-green-100 bg-white/80 hover:bg-green-50/50 transition-colors duration-500 hover:border-green-200 shadow-sm hover:shadow-xl hover:shadow-green-100/50">
+              <div className="group relative flex flex-col p-8 rounded-3xl border border-green-100 bg-white/80 hover:bg-green-50/50 transition-all duration-700 ease-in-out hover:border-green-200 shadow-sm hover:shadow-xl hover:shadow-green-100/50">
                 <div className="absolute top-0 left-0 w-full h-1 bg-green-600 rounded-t-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="w-14 h-14 rounded-2xl bg-green-100 text-green-700 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                   <CheckCircle2 className="w-7 h-7" />
@@ -277,59 +277,7 @@ export default function Index() {
           </div>
         </section>
 
-        {/* Section 3: About Tech Bharat */}
-        <section id="about" className="h-screen w-full snap-start snap-always relative overflow-hidden flex items-center justify-center">
-          <div className="max-w-[1400px] w-full px-6 relative z-10 flex flex-col justify-center h-full">
-            <div className="text-center mb-16">
-              <div className="inline-flex items-center px-4 py-1.5 rounded-full border border-primary/20 bg-white/60 backdrop-blur-sm text-primary text-xs font-semibold tracking-wide uppercase mb-6">
-                Our Organization
-              </div>
-              <h2 className="text-4xl lg:text-5xl font-bold mb-8 tracking-tight">Tech Bharat: <span className="text-[#000088]">Building AI for Public Good</span></h2>
-              <p className="text-xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
-                Tech Bharat is a non-profit organization dedicated to pioneering the next generation of 'i-governance'—systems that are <span className="text-primary font-bold">Intelligent, Inclusive, and Iterative</span>.
-              </p>
-              <p className="mt-8 text-lg text-muted-foreground max-w-4xl mx-auto leading-relaxed">
-                We believe that public infrastructure should be built on the foundations of trust and sovereignty. Through strategic collaborations like the <span className="font-bold text-[#000088]">'AI for Bharat'</span> initiative in Andhra Pradesh, we are developing scalable digital public assets that empower governments to serve their people with unprecedented efficiency and care.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[
-                {
-                  title: "Responsible AI",
-                  desc: "Ensuring every algorithm is grounded in truth, with strict human-in-the-loop oversight and bias mitigation.",
-                  icon: <Shield className="w-6 h-6" />,
-                  color: "orange"
-                },
-                {
-                  title: "Open Innovation",
-                  desc: "Utilizing and contributing to the global open-source ecosystem to build transparent and auditable tools.",
-                  icon: <Code2 className="w-6 h-6" />,
-                  color: "blue"
-                },
-                {
-                  title: "Sovereign Sustainability",
-                  desc: "Designing systems that run on state-owned infrastructure, ensuring long-term independence and security.",
-                  icon: <Zap className="w-6 h-6" />,
-                  color: "green"
-                }
-              ].map((val) => (
-                <div key={val.title} className="p-8 rounded-3xl bg-white/60 backdrop-blur-md border border-white/40 shadow-sm hover:shadow-xl transition-all duration-500 group">
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform ${val.color === 'orange' ? 'bg-orange-100 text-orange-600' :
-                    val.color === 'blue' ? 'bg-blue-100 text-[#000088]' :
-                      'bg-green-100 text-green-700'
-                    }`}>
-                    {val.icon}
-                  </div>
-                  <h4 className="font-bold text-xl mb-3 text-gray-900">{val.title}</h4>
-                  <p className="text-gray-500 leading-relaxed text-sm">{val.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Section 4: Team & Philosophy */}
+        {/* Section 3: Team & Philosophy */}
         <section id="team" className="h-screen w-full snap-start snap-always relative overflow-hidden flex items-center justify-center">
           <div className="max-w-[1400px] w-full px-6 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
 
@@ -349,7 +297,7 @@ export default function Index() {
                   </div>
                   <div>
                     <h4 className="font-bold text-lg text-gray-900">Sovereign Innovation</h4>
-                    <p className="text-gray-500">Leveraging open-source excellence—from Gemma LLMs to Tesseract OCR—to build secure, locally-hosted systems.</p>
+                    <p className="text-gray-500">Leveraging open-source excellence—from Gemma LLMs to Tesseract OCR—to build secure, locally-hosted systems that ensure state data sovereignty and eliminate proprietary dependencies.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4 p-4 rounded-xl hover:bg-white hover:shadow-md transition-all duration-300">
@@ -358,7 +306,7 @@ export default function Index() {
                   </div>
                   <div>
                     <h4 className="font-bold text-lg text-gray-900">Citizen-First Intelligence</h4>
-                    <p className="text-gray-500">Our systems act as an intelligent Copilot, cutting processing times by 70% while ensuring transparency.</p>
+                    <p className="text-gray-500">Moving beyond simple automation to 'i-governance.' Our systems act as an intelligent Copilot, cutting processing times by 70% while ensuring transparency and fairness for every citizen.</p>
                   </div>
                 </div>
               </div>
@@ -391,6 +339,59 @@ export default function Index() {
                 <h4 className="font-bold text-gray-900">Neha Sureddi</h4>
                 <p className="text-xs text-primary font-medium tracking-wide border-t border-gray-100 pt-2 mt-2">Applied AI intern</p>
               </div>
+            </div>
+          </div>
+
+        </section>
+
+        {/* Section 4: About Tech Bharat */}
+        <section id="about" className="h-screen w-full snap-start snap-always relative overflow-hidden flex items-center justify-center">
+          <div className="max-w-[1400px] w-full px-6 relative z-10 flex flex-col justify-center h-full">
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center px-4 py-1.5 rounded-full border border-primary/20 bg-white/60 backdrop-blur-sm text-primary text-xs font-semibold tracking-wide uppercase mb-6">
+                Our Organization
+              </div>
+              <h2 className="text-4xl lg:text-5xl font-bold mb-8 tracking-tight">Tech Bharat: <span className="text-[#000088]">Building AI for Public Good</span></h2>
+              <p className="text-xl text-muted-foreground max-w-6xl mx-auto leading-relaxed">
+                Tech Bharat is a non-profit organization dedicated to pioneering the next generation of 'i-governance'—systems that are <span className="text-primary font-bold">Intelligent, Inclusive, and Iterative</span>.
+              </p>
+              <p className="mt-8 text-lg text-muted-foreground max-w-6xl mx-auto leading-relaxed">
+                We believe that public infrastructure should be built on the foundations of trust and sovereignty. Through strategic collaborations like the <span className="font-bold text-[#000088]">'AI for Bharat'</span> initiative in Andhra Pradesh, we are developing scalable digital public assets that empower governments to serve their people with unprecedented efficiency and care.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {[
+                {
+                  title: "Responsible AI",
+                  desc: "Ensuring every algorithm is grounded in truth, with strict human-in-the-loop oversight and bias mitigation.",
+                  icon: <Shield className="w-6 h-6" />,
+                  color: "orange"
+                },
+                {
+                  title: "Open Innovation",
+                  desc: "Utilizing and contributing to the global open-source ecosystem to build transparent and auditable tools.",
+                  icon: <Code2 className="w-6 h-6" />,
+                  color: "blue"
+                },
+                {
+                  title: "Sovereign Sustainability",
+                  desc: "Designing systems that run on state-owned infrastructure, ensuring long-term independence and security.",
+                  icon: <Zap className="w-6 h-6" />,
+                  color: "green"
+                }
+              ].map((val) => (
+                <div key={val.title} className="p-8 rounded-3xl bg-white/60 backdrop-blur-md border border-white/40 shadow-sm hover:shadow-xl transition-all duration-700 group">
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform ${val.color === 'orange' ? 'bg-orange-100 text-orange-600' :
+                    val.color === 'blue' ? 'bg-blue-100 text-[#000088]' :
+                      'bg-green-100 text-green-700'
+                    }`}>
+                    {val.icon}
+                  </div>
+                  <h4 className="font-bold text-xl mb-3 text-gray-900">{val.title}</h4>
+                  <p className="text-gray-500 leading-relaxed text-sm">{val.desc}</p>
+                </div>
+              ))}
             </div>
           </div>
 
