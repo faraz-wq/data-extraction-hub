@@ -1,8 +1,9 @@
 import { useState, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
-import { Upload, FileText, X, CheckCircle2 } from 'lucide-react';
+import { Upload, FileText, X, CheckCircle2, Cloud, Server } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 // Fallback types if API fails or is loading
@@ -17,7 +18,7 @@ const FALLBACK_TYPES = [
 interface UploadFormProps {
   supportedTypes: string[];
   isLoadingTypes: boolean;
-  onExtract: (applicationType: string, files: File[]) => Promise<void>;
+  onExtract: (applicationType: string, files: File[], useOpensource: boolean) => Promise<void>;
   isExtracting: boolean;
 }
 
@@ -25,6 +26,7 @@ export function UploadForm({ supportedTypes, isLoadingTypes, onExtract, isExtrac
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [selectedValue, setSelectedValue] = useState<string>('');
   const [isDragging, setIsDragging] = useState(false);
+  const [useOpensource, setUseOpensource] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const displayTypes = supportedTypes.length > 0 ? supportedTypes : FALLBACK_TYPES;
@@ -62,7 +64,7 @@ export function UploadForm({ supportedTypes, isLoadingTypes, onExtract, isExtrac
 
   const handleSubmit = async () => {
     if (!selectedValue || selectedFiles.length === 0) return;
-    await onExtract(selectedValue, selectedFiles);
+    await onExtract(selectedValue, selectedFiles, useOpensource);
   };
 
   return (
@@ -101,6 +103,43 @@ export function UploadForm({ supportedTypes, isLoadingTypes, onExtract, isExtrac
             </SelectContent>
           </Select>
         </div>
+
+        {/* Processing Mode Toggle - Commented out as requested */}
+        {/* 
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            Processing Mode
+          </label>
+
+          <div className="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-white/50">
+            <div className="flex items-center gap-3">
+              {useOpensource ? (
+                <div className="p-2 rounded-full bg-blue-500/10">
+                  <Server className="w-4 h-4 text-blue-600" />
+                </div>
+              ) : (
+                <div className="p-2 rounded-full bg-purple-500/10">
+                  <Cloud className="w-4 h-4 text-purple-600" />
+                </div>
+              )}
+              <div>
+                <p className="text-sm font-medium">
+                  {useOpensource ? 'On-Premise' : 'Cloud (GCP)'}
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  {useOpensource
+                    ? 'Ollama + Tesseract (Local)'
+                    : 'Vertex AI + Vision API'}
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={useOpensource}
+              onCheckedChange={setUseOpensource}
+            />
+          </div>
+        </div>
+        */}
 
         {/* Step 2: Upload */}
         <div className="space-y-2">

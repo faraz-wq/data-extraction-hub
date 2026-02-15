@@ -267,9 +267,10 @@ class ApiClient {
 
 
   // Validation endpoints
-  async validateForm(applicationType: string, files: File[]): Promise<UniversalResponse> {
+  async validateForm(applicationType: string, files: File[], useOpensource: boolean = false): Promise<UniversalResponse> {
     const formData = new FormData();
     formData.append('application_type', applicationType);
+    formData.append('use_opensource', useOpensource.toString());
     files.forEach((file) => formData.append('files', file));
 
     const headers: Record<string, string> = {};

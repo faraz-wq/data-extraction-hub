@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -93,10 +92,10 @@ export default function Session() {
     if (loading) {
         return (
             <DashboardLayout noPadding>
-                <div className="h-screen flex items-center justify-center bg-[#F2F2F7]">
+                <div className="h-screen flex items-center justify-center bg-slate-50/50">
                     <div className="flex flex-col items-center gap-4 animate-in fade-in duration-500">
-                        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-                        <p className="text-sm font-medium text-gray-500">Loading Session...</p>
+                        <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+                        <p className="text-sm font-medium text-muted-foreground animate-pulse">Loading Session...</p>
                     </div>
                 </div>
             </DashboardLayout>
@@ -112,11 +111,11 @@ export default function Session() {
 
     return (
         <DashboardLayout noPadding>
-            <div className="h-screen overflow-hidden flex flex-col bg-[#F2F2F7]">
+            <div className="h-screen overflow-hidden flex flex-col bg-slate-50/50">
                 {/* Main Content Area */}
                 <main className="flex-1 min-h-0 flex flex-col overflow-hidden">
                     <div className="flex-1 flex overflow-hidden scale-in">
-                        <div className="w-[640px] border-r border-border/40 bg-white shadow-xl z-10 overflow-hidden flex flex-col">
+                        <div className="w-[640px] border-r border-border/40 bg-white/80 backdrop-blur-sm shadow-xl z-10 overflow-hidden flex flex-col">
                             <ResultsView
                                 result={session}
                                 onFieldHover={handleFieldHover}
@@ -127,7 +126,7 @@ export default function Session() {
                                 currentPage={pageNumber}
                             />
                         </div>
-                        <div className="flex-1 bg-[#8E8E93]/10 p-2 overflow-hidden flex flex-col">
+                        <div className="flex-1 bg-slate-100/50 p-4 overflow-hidden flex flex-col">
                             <div className="flex-1 rounded-2xl overflow-hidden shadow-2xl ring-1 ring-black/5 bg-white">
                                 <PDFViewerWithBoxes
                                     file={fileToView}

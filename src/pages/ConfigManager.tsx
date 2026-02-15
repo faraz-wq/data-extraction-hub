@@ -223,23 +223,26 @@ export default function ConfigManager() {
                                                     onClick={() => handleEdit(config)}
                                                     className="flex-1"
                                                 >
-                                                    <Edit className="w-4 h-4 mr-1" />
+                                                    <Edit className="w-4 h-4 mr-2" />
                                                     Edit
                                                 </Button>
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
                                                     onClick={() => handleDuplicate(config)}
+                                                    className="flex-1"
                                                 >
-                                                    <Copy className="w-4 h-4" />
+                                                    <Copy className="w-4 h-4 mr-2" />
+                                                    Duplicate
                                                 </Button>
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
                                                     onClick={() => setDeleteTarget(config.application_type)}
-                                                    className="text-destructive hover:bg-destructive/10"
+                                                    className="flex-1 text-destructive hover:bg-destructive/10"
                                                 >
-                                                    <Trash2 className="w-4 h-4" />
+                                                    <Trash2 className="w-4 h-4 mr-2" />
+                                                    Delete
                                                 </Button>
                                             </div>
                                         </div>

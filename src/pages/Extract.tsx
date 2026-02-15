@@ -45,7 +45,7 @@ export default function Extract() {
     fetchTypes();
   }, []);
 
-  const handleExtract = async (applicationType: string, files: File[]) => {
+  const handleExtract = async (applicationType: string, files: File[], useOpensource: boolean) => {
     setIsExtracting(true);
     setExtractionResult(null);
     setUploadedFile(files[0] || null);
@@ -54,17 +54,18 @@ export default function Extract() {
     setPageNumber(1);
 
     try {
-      // Use the Universal Workflow via /validate-form
-      const report = await api.validateForm(applicationType, files);
+      // Use the Universal Workflow via /validate-form with processing mode selection
+      const report = await api.validateForm(applicationType, files, useOpensource);
 
       // Use the helper to transform the response
       const result = transformToSessionDetail(report, applicationType);
 
       setExtractionResult(result);
 
+      const processingMode = useOpensource ? 'on-premise' : 'cloud';
       toast({
         title: 'Validation Complete',
-        description: `Successfully processed ${Object.keys(result.summary || {}).length} fields. Saving session...`,
+        description: `Successfully processed ${Object.keys(result.summary || {}).length} fields using ${processingMode} processing. Saving session...`,
       });
 
       // Navigate to the persistent session view
@@ -93,23 +94,25 @@ export default function Extract() {
 
   return (
     <DashboardLayout noPadding>
-      <div className="h-screen overflow-hidden flex flex-col bg-[#F2F2F7]">
+      <div className="h-screen overflow-hidden flex flex-col bg-slate-50/50">
         {/* Main Content Area */}
         <main className="flex-1 min-h-0 flex flex-col overflow-hidden">
           {!extractionResult ? (
-            <div className="flex-1 flex items-center justify-center p-6">
-              <div className="w-full max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <UploadForm
-                  supportedTypes={supportedTypes}
-                  isLoadingTypes={isLoadingTypes}
-                  onExtract={handleExtract}
-                  isExtracting={isExtracting}
-                />
+            <div className="flex-1 flex items-center justify-center p-6 bg-gradient-to-br from-slate-50 to-slate-100">
+              <div className="w-full max-w-2xl animate-fade-in-up duration-700">
+                <div className="glass-card rounded-2xl p-1 shadow-2xl shadow-primary/5">
+                  <UploadForm
+                    supportedTypes={supportedTypes}
+                    isLoadingTypes={isLoadingTypes}
+                    onExtract={handleExtract}
+                    isExtracting={isExtracting}
+                  />
+                </div>
               </div>
             </div>
           ) : (
-            <div className="flex-1 flex overflow-hidden scale-in">
-              <div className="w-[640px] border-r border-border/40 bg-white shadow-xl z-10 overflow-hidden flex flex-col">
+            <div className="flex-1 flex overflow-hidden animate-in fade-in zoom-in-95 duration-500">
+              <div className="w-[640px] border-r border-border/40 bg-white/80 backdrop-blur-sm shadow-xl z-10 overflow-hidden flex flex-col">
                 <ResultsView
                   result={extractionResult}
                   onFieldHover={handleFieldHover}
@@ -120,7 +123,7 @@ export default function Extract() {
                   currentPage={pageNumber}
                 />
               </div>
-              <div className="flex-1 bg-[#8E8E93]/10 p-2 overflow-hidden flex flex-col">
+              <div className="flex-1 bg-slate-100/50 p-4 overflow-hidden flex flex-col">
                 <div className="flex-1 rounded-2xl overflow-hidden shadow-2xl ring-1 ring-black/5 bg-white">
                   <PDFViewerWithBoxes
                     file={uploadedFile}

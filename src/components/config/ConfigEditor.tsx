@@ -170,22 +170,24 @@ function SortableFieldCard({
                                 />
                             </div>
 
-                            <div className="flex items-center gap-1 ml-auto pl-2 border-l">
+                            <div className="flex items-center gap-2 ml-auto pl-2 border-l">
                                 <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => duplicateKeyDetail(index)}
-                                    className="h-8 w-8 p-0 text-muted-foreground hover:text-primary hover:bg-primary/5"
+                                    className="h-8 px-2 text-muted-foreground hover:text-primary hover:bg-primary/5 flex items-center gap-1.5"
                                 >
-                                    <Copy className="w-4 h-4" />
+                                    <Copy className="w-3.5 h-3.5" />
+                                    <span className="text-[10px] font-medium">Duplicate</span>
                                 </Button>
                                 <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => removeKeyDetail(index)}
-                                    className="h-8 w-8 p-0 text-destructive/70 hover:text-destructive hover:bg-destructive/5"
+                                    className="h-8 px-2 text-destructive/70 hover:text-destructive hover:bg-destructive/5 flex items-center gap-1.5"
                                 >
-                                    <X className="w-4 h-4" />
+                                    <X className="w-3.5 h-3.5" />
+                                    <span className="text-[10px] font-medium">Remove</span>
                                 </Button>
                             </div>
                         </div>
@@ -1060,11 +1062,11 @@ export function ConfigEditor({ config, isNew, onSave, onCancel }: ConfigEditorPr
                                     className="h-7 text-[10px] text-muted-foreground hover:bg-muted font-bold uppercase"
                                 >
                                     <FileUp className="w-3 h-3 mr-1" />
-                                    Batch
+                                    Batch Import
                                 </Button>
                                 <Button onClick={addKeyDetail} size="sm" variant="ghost" className="h-7 text-xs text-primary hover:bg-primary/5">
                                     <Plus className="w-3 h-3 mr-1" />
-                                    Add Field
+                                    Add New Field
                                 </Button>
                             </div>
                         </div>
@@ -1140,22 +1142,24 @@ export function ConfigEditor({ config, isNew, onSave, onCancel }: ConfigEditorPr
                                     <Card key={ruleIndex} className="rounded-xl border shadow-none bg-background overflow-hidden">
                                         <div className="flex items-center justify-between px-3 py-1.5 border-b bg-muted/5">
                                             <CardTitle className="text-[11px] font-bold uppercase text-muted-foreground">Global Logic</CardTitle>
-                                            <div className="flex items-center gap-1">
+                                            <div className="flex items-center gap-2">
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => duplicateRule(ruleIndex)}
-                                                    className="h-6 w-6 p-0 text-muted-foreground"
+                                                    className="h-7 px-2 text-muted-foreground hover:text-primary hover:bg-primary/5 flex items-center gap-1.5"
                                                 >
                                                     <Copy className="w-3 h-3" />
+                                                    <span className="text-[10px] font-medium">Duplicate</span>
                                                 </Button>
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => removeRule(ruleIndex)}
-                                                    className="h-6 w-6 p-0 text-destructive/50"
+                                                    className="h-7 px-2 text-destructive/50 hover:text-destructive hover:bg-destructive/5 flex items-center gap-1.5"
                                                 >
                                                     <X className="w-3 h-3" />
+                                                    <span className="text-[10px] font-medium">Remove</span>
                                                 </Button>
                                             </div>
                                         </div>
