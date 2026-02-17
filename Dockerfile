@@ -13,8 +13,8 @@ RUN npm install
 # Copy the rest of the application code
 COPY . .
 
-# Expose port (configured in vite.config.ts)
+# Expose port 8080
 EXPOSE 8080
 
-# Start the development server
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+# Build the application and start serving it using Vite's preview
+CMD ["sh", "-c", "npm run build && npm run preview -- --host 0.0.0.0 --port 8080"]
